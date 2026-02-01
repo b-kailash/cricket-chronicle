@@ -266,7 +266,9 @@ cd frontend && npm run test:e2e
 
 ## Contributing
 
-### For Team Members
+> **Note:** This is a proprietary project. All contributions are subject to the Contributor Agreement outlined in the [LICENSE](LICENSE) file. By submitting a contribution, you grant the Licensor perpetual rights to use and incorporate your work.
+
+### For Authorized Team Members
 1. Create a feature branch from `develop`
 2. Implement feature following Definition of Done (see ProjectPlan.md)
 3. Write tests (unit, integration, E2E as applicable)
@@ -287,7 +289,29 @@ cd frontend && npm run test:e2e
 
 ## License
 
-[To be determined - Specify license here]
+**Proprietary License - All Rights Reserved**
+
+This software is proprietary and confidential. The source code is made available for transparency, evaluation, and educational purposes only.
+
+**You MAY:**
+- View and study the source code
+- Run locally for personal, non-commercial evaluation
+- Submit bug fixes (subject to Contributor Agreement)
+
+**You MAY NOT (without a commercial license):**
+- Use for any commercial purpose
+- Copy, modify, or distribute the software
+- Host or deploy for third-party use
+- Create derivative works
+
+**Commercial Licensing Available For:**
+- Provincial/National Cricket Associations
+- Cricket Clubs and Leagues
+- Sports Management Organizations
+
+See the [LICENSE](LICENSE) file for complete terms.
+
+**Licensing Inquiries:** [Contact Email]
 
 ---
 
