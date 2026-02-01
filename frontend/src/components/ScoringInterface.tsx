@@ -35,7 +35,7 @@ export default function ScoringInterface({ match, onBack }: ScoringInterfaceProp
   const [deliveries, setDeliveries] = useState<OfflineDelivery[]>([]);
   const [currentBatter, setCurrentBatter] = useState(MOCK_PLAYERS['team-1'][0]);
   const [nonStriker, setNonStriker] = useState(MOCK_PLAYERS['team-1'][1]);
-  const [currentBowler, setCurrentBowler] = useState(MOCK_PLAYERS['team-2'][0]);
+  const [currentBowler] = useState(MOCK_PLAYERS['team-2'][0]);
   const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {

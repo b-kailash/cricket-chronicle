@@ -135,7 +135,13 @@ class MatchService {
     const sequence = deliveryCount + 1;
 
     // Calculate total runs including extras
-    const extras = params.extras || { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalties: 0 };
+    const extras = {
+      wides: params.extras?.wides || 0,
+      noBalls: params.extras?.noBalls || 0,
+      byes: params.extras?.byes || 0,
+      legByes: params.extras?.legByes || 0,
+      penalties: params.extras?.penalties || 0
+    };
     const totalRuns = params.runsScored + extras.wides + extras.noBalls + extras.byes + extras.legByes + extras.penalties;
 
     const delivery: OfflineDelivery = {

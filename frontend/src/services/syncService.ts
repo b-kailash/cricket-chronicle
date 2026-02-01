@@ -5,7 +5,7 @@
  * Handles online/offline detection and synchronization of data
  */
 
-import { db, OfflineDelivery, OfflineMatch, SyncQueue } from '../db/schema';
+import { db, OfflineDelivery, OfflineMatch } from '../db/schema';
 
 export type SyncStatus = 'synced' | 'pending' | 'syncing' | 'failed';
 
@@ -215,7 +215,7 @@ class SyncService {
       for (const delivery of unsyncedDeliveries) {
         try {
           // Simulate API call to sync delivery
-          const synced = await this.simulateDeliverySync(delivery);
+          const synced = this.syncFailureMode ? false : await this.simulateDeliverySync(delivery);
 
           if (synced) {
             // Update delivery sync status
@@ -333,6 +333,61 @@ class SyncService {
    */
   public setOfflineMode(offline: boolean) {
     this.handleOnlineStatusChange(!offline);
+  }
+
+  /**
+   * Set online status (for testing)
+   */
+  public setOnlineStatus(isOnline: boolean) {
+    this.handleOnlineStatusChange(isOnline);
+  }
+
+  /**
+   * Sync all pending data (for testing)
+   */
+  public async syncAll(): Promise<SyncResult> {
+    return await this.syncPendingData();
+  }
+
+  /**
+   * Get count of unsynced deliveries
+   */
+  public async getUnsyncedCount(): Promise<number> {
+    return await db.deliveries.filter(d => !d.synced).count();
+  }
+
+  /**
+   * Get sync status for a specific match
+   */
+  public async getMatchSyncStatus(matchId: string): Promise<SyncStatus> {
+    const unsyncedCount = await db.deliveries
+      .filter(d => d.matchId === matchId && !d.synced)
+      .count();
+
+    if (unsyncedCount === 0) {
+      return 'synced';
+    } else {
+      return 'pending';
+    }
+  }
+
+  private syncFailureMode: boolean = false;
+
+  /**
+   * Set sync failure mode for testing
+   */
+  public setSyncFailureMode(enabled: boolean) {
+    this.syncFailureMode = enabled;
+  }
+
+  /**
+   * Override simulate methods to respect failure mode
+   */
+  private async simulateDeliverySyncWithFailure(delivery: OfflineDelivery): Promise<boolean> {
+    if (this.syncFailureMode) {
+      return false;
+    }
+    return await this.simulateDeliverySync(delivery);
   }
 }
 
