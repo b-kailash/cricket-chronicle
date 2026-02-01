@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cricket Chronicle - Sprint 0 Test Suite</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #2c3e50;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-case {
+      padding: 10px;
+      margin: 10px 0;
+      border-left: 4px solid #95a5a6;
+      background: #ecf0f1;
+    }
+    .test-case.running {
+      border-left-color: #f39c12;
+      background: #fef5e7;
+    }
+    .test-case.passed {
+      border-left-color: #27ae60;
+      background: #eafaf1;
+    }
+    .test-case.failed {
+      border-left-color: #e74c3c;
+      background: #fadbd8;
+    }
+    .test-actions {
+      margin: 20px 0;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+    .results-summary {
+      background: #34495e;
+      color: white;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .log {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      margin: 10px 0;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 3px 0;
+    }
+    .log-success { color: #2ecc71; }
+    .log-error { color: #e74c3c; }
+    .log-info { color: #3498db; }
+    .log-warn { color: #f39c12; }
+  </style>
+</head>
+<body>
+  <h1>Cricket Chronicle - Sprint 0 Test Suite</h1>
+  <p><strong>Test Server:</strong> 192.168.1.235 | <strong>Browser:</strong> <span id="browser-info"></span></p>
+
+  <div class="test-actions">
+    <button onclick="runAllTests()" id="run-all-btn">Run All Tests</button>
+    <button onclick="runOfflineTests()" id="run-offline-btn">Run Offline Tests</button>
+    <button onclick="runSyncTests()" id="run-sync-btn">Run Sync Tests</button>
+    <button onclick="runPerformanceTests()" id="run-perf-btn">Run Performance Tests</button>
+    <button onclick="clearDatabase()">Clear Database</button>
+    <button onclick="clearLog()">Clear Log</button>
+  </div>
+
+  <div class="results-summary" id="summary">
+    <strong>Test Results:</strong> Passed: <span id="passed-count">0</span> | Failed: <span id="failed-count">0</span> | Total: <span id="total-count">0</span>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Console Log</h2>
+    <div class="log" id="test-log"></div>
+  </div>
+
+  <div class="test-section" id="offline-tests">
+    <h2>1. Offline Data Persistence Tests</h2>
+    <div id="offline-test-cases"></div>
+  </div>
+
+  <div class="test-section" id="sync-tests">
+    <h2>2. Sync Simulation Tests</h2>
+    <div id="sync-test-cases"></div>
+  </div>
+
+  <div class="test-section" id="performance-tests">
+    <h2>3. Performance Tests</h2>
+    <div id="performance-test-cases"></div>
+  </div>
+
+  <script type="module">
+    import { matchService } from '../src/services/matchService.js';
+    import { syncService } from '../src/services/syncService.js';
+    import { db } from '../src/db/schema.js';
+
+    // Test Results Tracking
+    let testResults = { passed: 0, failed: 0, total: 0 };
+
+    // Logging
+    function log(message, type = 'info') {
+      const logElement = document.getElementById('test-log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logElement.appendChild(entry);
+      logElement.scrollTop = logElement.scrollHeight;
+      console.log(message);
+    }
+
+    function clearLog() {
+      document.getElementById('test-log').innerHTML = '';
+    }
+
+    // Test Case Management
+    function createTestCase(containerId, testName) {
+      const container = document.getElementById(containerId);
+      const testCase = document.createElement('div');
+      testCase.className = 'test-case';
+      testCase.id = `test-${testName.replace(/\s/g, '-')}`;
+      testCase.innerHTML = `<strong>${testName}</strong>: <span class="status">Pending...</span>`;
+      container.appendChild(testCase);
+      return testCase;
+    }
+
+    function updateTestCase(testCase, status, message = '') {
+      testCase.className = `test-case ${status}`;
+      const statusText = status === 'passed' ? '✓ PASSED' : status === 'failed' ? '✗ FAILED' : '⟳ RUNNING';
+      testCase.querySelector('.status').textContent = `${statusText} ${message}`;
+
+      if (status === 'passed') {
+        testResults.passed++;
+      } else if (status === 'failed') {
+        testResults.failed++;
+      }
+      testResults.total = testResults.passed + testResults.failed;
+      updateSummary();
+    }
+
+    function updateSummary() {
+      document.getElementById('passed-count').textContent = testResults.passed;
+      document.getElementById('failed-count').textContent = testResults.failed;
+      document.getElementById('total-count').textContent = testResults.total;
+    }
+
+    // Test: Create Match and Verify Persistence
+    async function testMatchCreation() {
+      const testCase = createTestCase('offline-test-cases', 'Create Match and Store in IndexedDB');
+      updateTestCase(testCase, 'running');
+
+      try {
+        log('Creating test match...', 'info');
+        const match = await matchService.createMatch({
+          matchNumber: 'TEST-001',
+          date: '2026-02-01',
+          venue: 'Test Ground',
+          team1: { id: 'team-1', name: 'Team A' },
+          team2: { id: 'team-2', name: 'Team B' },
+        });
+
+        if (!match || !match.localId) {
+          throw new Error('Match creation failed');
+        }
+
+        log(`Match created with ID: ${match.localId}`, 'success');
+
+        // Verify it's in IndexedDB
+        const retrieved = await db.matches.get({ localId: match.localId });
+        if (!retrieved) {
+          throw new Error('Match not found in IndexedDB');
+        }
+
+        log('Match successfully persisted in IndexedDB', 'success');
+        updateTestCase(testCase, 'passed', `- Match ID: ${match.localId}`);
+        return match;
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        updateTestCase(testCase, 'failed', `- ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Test: Record Delivery
+    async function testDeliveryRecording(matchId) {
+      const testCase = createTestCase('offline-test-cases', 'Record Delivery with Runs');
+      updateTestCase(testCase, 'running');
+
+      try {
+        log('Creating innings...', 'info');
+        await matchService.createInnings(matchId, 1, 'team-1', 'Team A');
+
+        log('Recording delivery...', 'info');
+        const delivery = await matchService.recordDelivery({
+          matchId,
+          inningsNumber: 1,
+          overNumber: 1,
+          ballNumber: 1,
+          bowlerId: 'bowler-1',
+          bowlerName: 'John Bowler',
+          batterId: 'batter-1',
+          batterName: 'Jane Batter',
+          nonStrikerId: 'batter-2',
+          nonStrikerName: 'Bob Batter',
+          runsScored: 4,
+        });
+
+        if (!delivery || delivery.runsScored !== 4) {
+          throw new Error('Delivery recording failed');
+        }
+
+        log(`Delivery recorded: ${delivery.runsScored} runs`, 'success');
+        updateTestCase(testCase, 'passed', `- Runs: ${delivery.runsScored}`);
+        return delivery;
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        updateTestCase(testCase, 'failed', `- ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Test: Page Refresh Data Retention
+    async function testDataPersistence(matchId) {
+      const testCase = createTestCase('offline-test-cases', 'Data Persists After Page Refresh');
+      updateTestCase(testCase, 'running');
+
+      try {
+        log('Verifying data persistence...', 'info');
+
+        const match = await db.matches.get({ localId: matchId });
+        const deliveries = await matchService.getMatchDeliveries(matchId);
+
+        if (!match) {
+          throw new Error('Match data lost');
+        }
+
+        if (deliveries.length === 0) {
+          throw new Error('Delivery data lost');
+        }
+
+        log(`Data persisted: ${deliveries.length} deliveries found`, 'success');
+        updateTestCase(testCase, 'passed', `- ${deliveries.length} deliveries retained`);
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        updateTestCase(testCase, 'failed', `- ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Test: Online/Offline Detection
+    async function testOnlineDetection() {
+      const testCase = createTestCase('sync-test-cases', 'Online/Offline Detection');
+      updateTestCase(testCase, 'running');
+
+      try {
+        log('Testing online/offline detection...', 'info');
+
+        const initialStatus = syncService.getOnlineStatus();
+        log(`Current status: ${initialStatus ? 'ONLINE' : 'OFFLINE'}`, 'info');
+
+        syncService.setOnlineStatus(false);
+        const offlineStatus = syncService.getOnlineStatus();
+        if (offlineStatus !== false) {
+          throw new Error('Failed to set offline status');
+        }
+        log('Successfully set OFFLINE status', 'success');
+
+        syncService.setOnlineStatus(true);
+        const onlineStatus = syncService.getOnlineStatus();
+        if (onlineStatus !== true) {
+          throw new Error('Failed to set online status');
+        }
+        log('Successfully set ONLINE status', 'success');
+
+        updateTestCase(testCase, 'passed');
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        updateTestCase(testCase, 'failed', `- ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Test: Sync Simulation
+    async function testSyncSimulation(matchId) {
+      const testCase = createTestCase('sync-test-cases', 'Sync Simulation (Online Mode)');
+      updateTestCase(testCase, 'running');
+
+      try {
+        log('Testing sync simulation...', 'info');
+
+        syncService.setOnlineStatus(true);
+
+        const unsyncedBefore = await syncService.getUnsyncedCount();
+        log(`Unsynced deliveries before sync: ${unsyncedBefore}`, 'info');
+
+        const result = await syncService.syncAll();
+
+        log(`Sync result: ${result.syncedCount} synced, ${result.failedCount} failed`, 'info');
+
+        const unsyncedAfter = await syncService.getUnsyncedCount();
+        log(`Unsynced deliveries after sync: ${unsyncedAfter}`, 'success');
+
+        if (result.success) {
+          updateTestCase(testCase, 'passed', `- Synced: ${result.syncedCount}`);
+        } else {
+          updateTestCase(testCase, 'failed', `- Failed: ${result.failedCount}`);
+        }
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        updateTestCase(testCase, 'failed', `- ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Test: Performance with 500+ Deliveries
+    async function testPerformance500Deliveries() {
+      const testCase = createTestCase('performance-test-cases', 'Record 500 Deliveries - Performance Test');
+      updateTestCase(testCase, 'running');
+
+      try {
+        log('Creating match for performance test...', 'info');
+        const match = await matchService.createMatch({
+          matchNumber: 'PERF-001',
+          date: '2026-02-01',
+          venue: 'Performance Test Ground',
+          team1: { id: 'team-1', name: 'Team A' },
+          team2: { id: 'team-2', name: 'Team B' },
+        });
+
+        await matchService.createInnings(match.localId, 1, 'team-1', 'Team A');
+
+        log('Recording 500 deliveries...', 'info');
+        const startTime = performance.now();
+
+        for (let i = 1; i <= 500; i++) {
+          await matchService.recordDelivery({
+            matchId: match.localId,
+            inningsNumber: 1,
+            overNumber: Math.ceil(i / 6),
+            ballNumber: ((i - 1) % 6) + 1,
+            bowlerId: 'bowler-1',
+            bowlerName: 'John Bowler',
+            batterId: 'batter-1',
+            batterName: 'Jane Batter',
+            nonStrikerId: 'batter-2',
+            nonStrikerName: 'Bob Batter',
+            runsScored: Math.floor(Math.random() * 7),
+          });
+
+          if (i % 100 === 0) {
+            log(`Recorded ${i} deliveries...`, 'info');
+          }
+        }
+
+        const endTime = performance.now();
+        const duration = (endTime - startTime) / 1000;
+
+        log(`Recorded 500 deliveries in ${duration.toFixed(2)} seconds`, 'success');
+        log(`Average: ${(duration / 500 * 1000).toFixed(2)}ms per delivery`, 'success');
+
+        const deliveries = await matchService.getMatchDeliveries(match.localId);
+        log(`Verified: ${deliveries.length} deliveries in database`, 'success');
+
+        updateTestCase(testCase, 'passed', `- Duration: ${duration.toFixed(2)}s, Avg: ${(duration / 500 * 1000).toFixed(2)}ms/delivery`);
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        updateTestCase(testCase, 'failed', `- ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Main Test Runners
+    window.runOfflineTests = async function() {
+      disableButtons(true);
+      resetResults();
+      clearLog();
+      log('=== STARTING OFFLINE PERSISTENCE TESTS ===', 'info');
+
+      try {
+        const match = await testMatchCreation();
+        await testDeliveryRecording(match.localId);
+        await testDataPersistence(match.localId);
+        log('=== OFFLINE TESTS COMPLETED ===', 'success');
+      } catch (error) {
+        log('=== OFFLINE TESTS FAILED ===', 'error');
+      } finally {
+        disableButtons(false);
+      }
+    };
+
+    window.runSyncTests = async function() {
+      disableButtons(true);
+      resetResults();
+      clearLog();
+      log('=== STARTING SYNC SIMULATION TESTS ===', 'info');
+
+      try {
+        const match = await testMatchCreation();
+        await testDeliveryRecording(match.localId);
+        await testOnlineDetection();
+        await testSyncSimulation(match.localId);
+        log('=== SYNC TESTS COMPLETED ===', 'success');
+      } catch (error) {
+        log('=== SYNC TESTS FAILED ===', 'error');
+      } finally {
+        disableButtons(false);
+      }
+    };
+
+    window.runPerformanceTests = async function() {
+      disableButtons(true);
+      resetResults();
+      clearLog();
+      log('=== STARTING PERFORMANCE TESTS ===', 'info');
+
+      try {
+        await testPerformance500Deliveries();
+        log('=== PERFORMANCE TESTS COMPLETED ===', 'success');
+      } catch (error) {
+        log('=== PERFORMANCE TESTS FAILED ===', 'error');
+      } finally {
+        disableButtons(false);
+      }
+    };
+
+    window.runAllTests = async function() {
+      disableButtons(true);
+      resetResults();
+      clearLog();
+      log('=== STARTING ALL TESTS ===', 'info');
+
+      try {
+        await runOfflineTests();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await runSyncTests();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await runPerformanceTests();
+        log('=== ALL TESTS COMPLETED ===', 'success');
+      } catch (error) {
+        log('=== SOME TESTS FAILED ===', 'error');
+      } finally {
+        disableButtons(false);
+      }
+    };
+
+    window.clearDatabase = async function() {
+      if (confirm('Are you sure you want to clear all test data?')) {
+        await db.delete();
+        log('Database cleared', 'warn');
+        location.reload();
+      }
+    };
+
+    function disableButtons(disabled) {
+      document.querySelectorAll('button').forEach(btn => btn.disabled = disabled);
+    }
+
+    function resetResults() {
+      testResults = { passed: 0, failed: 0, total: 0 };
+      updateSummary();
+      document.getElementById('offline-test-cases').innerHTML = '';
+      document.getElementById('sync-test-cases').innerHTML = '';
+      document.getElementById('performance-test-cases').innerHTML = '';
+    }
+
+    // Initialize
+    document.getElementById('browser-info').textContent = navigator.userAgent.split(' ').slice(-2).join(' ');
+    log('Test suite loaded and ready', 'success');
+  </script>
+</body>
+</html>
