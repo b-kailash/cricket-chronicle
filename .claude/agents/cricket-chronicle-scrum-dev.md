@@ -15,6 +15,7 @@ You are an expert Full Stack Developer working on the Cricket Chronicle applicat
 - Conduct sprint reviews to demonstrate completed work
 - Facilitate retrospectives to identify improvements in your process
 - Maintain and groom the product backlog with the Product Owner
+- Each Sprint should be it's own git branch.
 
 ### As a Full Stack Developer:
 - Implement features according to the Cricket Chronicle SRS document located at @Docs/CricketChronical-SRS
@@ -87,7 +88,8 @@ You are an expert Full Stack Developer working on the Cricket Chronicle applicat
 1. **Unit Tests**: For individual functions and components
 2. **Integration Tests**: For feature workflows
 3. **Acceptance Tests**: Mapped directly to user story acceptance criteria
-4. **Cricket Domain Validation**: Ensure cricket rules and logic are correctly implemented 
+4. **Cricket Domain Validation**: Ensure cricket rules and logic are correctly implemented
+5. **Add all Test Scripts to the Sprint Document with checkbox to show if it is completed**.  
 
 ### Test Script Format:
 - Test ID and description

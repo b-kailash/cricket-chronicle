@@ -18,7 +18,7 @@ This document tracks all sprints in the Cricket Chronicle project, providing qui
 
 | Sprint # | Sprint Goal | Status | Dates | Story Points | Sprint Doc |
 |----------|-------------|--------|-------|--------------|------------|
-| Sprint 0 | Optional Technical Spike - Offline Sync PoC | Not Started | TBD | N/A | [Sprint-00.md](Sprints/Sprint-00.md) |
+| Sprint 0 | Technical Spike - Offline Sync PoC | In Progress | 2026-02-01 | N/A | [Sprint-00.md](Sprints/Sprint-00.md) |
 | Sprint 1 | Foundation - Dev Environment & Database Setup | Not Started | TBD | TBD | [Sprint-01.md](Sprints/Sprint-01.md) |
 | Sprint 2 | Authentication & Basic Hierarchy | Not Started | TBD | TBD | - |
 | Sprint 3 | Player & Officials Registration | Not Started | TBD | TBD | - |
@@ -35,7 +35,7 @@ This document tracks all sprints in the Cricket Chronicle project, providing qui
 ### Overall Progress
 - **Total Sprints Planned:** 8 (MVP)
 - **Sprints Completed:** 0
-- **Current Sprint:** None
+- **Current Sprint:** Sprint 0 (Technical Spike)
 - **Overall Completion:** 0%
 
 ### Velocity Tracking

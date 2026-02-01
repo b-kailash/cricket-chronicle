@@ -78,3 +78,5 @@ out/
 sw.js
 workbox-*.js
 precache-manifest.*.js
+.claude/
+gittoken.txt
