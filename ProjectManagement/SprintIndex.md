@@ -19,8 +19,8 @@ This document tracks all sprints in the Cricket Chronicle project, providing qui
 | Sprint # | Sprint Goal | Status | Dates | Story Points | Sprint Directory |
 |----------|-------------|--------|-------|--------------|------------------|
 | Sprint 0 | Technical Spike - Offline Sync PoC | Completed | 2026-02-01 | 13 | [Sprint-00/](Sprints/Sprint-00/) |
-| Sprint 1 | Backend Infrastructure & Containerized Database | In Progress | 2026-02-02 | 29 | [Sprint-01/](Sprints/Sprint-01/) |
-| Sprint 2 | Frontend Integration & Enhanced Sync | Not Started | TBD | TBD | - |
+| Sprint 1 | Backend Infrastructure & Containerized Database | Completed | 2026-02-02 | 29 | [Sprint-01/](Sprints/Sprint-01/) |
+| Sprint 2 | Frontend-Backend Integration & Real Sync | In Progress | 2026-02-02 | TBD | [Sprint-02/](Sprints/Sprint-02/) |
 | Sprint 3 | Player & Officials Registration | Not Started | TBD | TBD | - |
 | Sprint 4 | Match Creation & Setup | Not Started | TBD | TBD | - |
 | Sprint 5 | Ball-by-Ball Scoring Engine (Basic) | Not Started | TBD | TBD | - |
@@ -53,7 +53,15 @@ Each Sprint directory contains:
 | Sprint Plan | Backend infrastructure planning | [SprintPlan.md](Sprints/Sprint-01/SprintPlan.md) |
 | Stories | User stories and acceptance criteria | [Stories.md](Sprints/Sprint-01/Stories.md) |
 | Test Plan | Test execution plan and results | [TestPlan.md](Sprints/Sprint-01/TestPlan.md) |
-| Retrospective | Sprint retrospective (pending) | Pending Sprint Closure |
+| Retrospective | Sprint retrospective document | [Retrospective.md](Sprints/Sprint-01/Retrospective.md) |
+
+### Sprint 2 Documents
+| Document | Description | Link |
+|----------|-------------|------|
+| Sprint Plan | Frontend-backend integration planning | [SprintPlan.md](Sprints/Sprint-02/SprintPlan.md) |
+| Stories | User stories and acceptance criteria | [Stories.md](Sprints/Sprint-02/Stories.md) |
+| Test Plan | Test execution plan | Pending |
+| Retrospective | Sprint retrospective | Pending Sprint Closure |
 
 ---
 
@@ -61,15 +69,15 @@ Each Sprint directory contains:
 
 ### Overall Progress
 - **Total Sprints Planned:** 8 (MVP)
-- **Sprints Completed:** 1 (Sprint 0)
-- **Current Sprint:** Sprint 1 (In Progress)
-- **Overall Completion:** 12.5% (1/8 sprints)
+- **Sprints Completed:** 2 (Sprint 0, Sprint 1)
+- **Current Sprint:** Sprint 2 (In Progress)
+- **Overall Completion:** 25% (2/8 sprints)
 
 ### Velocity Tracking
 | Sprint | Planned SP | Completed SP | Velocity | Notes |
 |--------|-----------|--------------|----------|-------|
 | Sprint 0 | 13 | 13 | 100% | Technical Spike - All tests passed |
-| Sprint 1 | 29 | 29 | 100% | All 5 stories completed |
+| Sprint 1 | 29 | 29 | 100% | All 5 stories completed, 19/19 tests passed |
 
 **Average Velocity:** 21 points per sprint
 
@@ -80,7 +88,7 @@ Each Sprint directory contains:
 ### Phase 1: Foundation (Sprints 0-2)
 - [x] Sprint 0: Technical spike - offline architecture validation
 - [x] Sprint 1: Backend infrastructure, containerized database
-- [ ] Sprint 2: Frontend integration, enhanced sync
+- [ ] Sprint 2: Frontend integration, real sync implementation
 
 **Phase 1 Status:** 67% (2/3 sprints completed)
 
@@ -98,7 +106,7 @@ Each Sprint directory contains:
 
 **Phase 3 Status:** Not Started (0/3 sprints completed)
 
-**MVP Overall Status:** 22% (2/9 sprints completed including Sprint 0)
+**MVP Overall Status:** 25% (2/8 sprints completed)
 
 ---
 
@@ -121,16 +129,17 @@ Each Sprint directory contains:
 
 ## Sprint 1 Summary
 
-**Status:** IN PROGRESS (2026-02-02)
+**Status:** COMPLETED (2026-02-02)
 **Branch:** sprint-1/integration
 **Story Points:** 29
-**Test Results:** 14/19 tests PASSED (74% - pending seed data)
+**Test Results:** 19/19 tests PASSED (100%)
 
 **Key Deliverables:**
 - Docker Compose with PostgreSQL 14 + Node.js backend
 - Prisma schema with 20 database tables
 - JWT authentication with bcrypt password hashing
 - Match and Delivery sync API endpoints
+- Seed data script with test data
 - Deployed to test server (192.168.1.235:3001)
 
 **Git Commits:**
@@ -138,11 +147,24 @@ Each Sprint directory contains:
 - fix(docker): use npm install instead of npm ci
 - fix(docker): use port 5433 to avoid conflict
 - fix(docker): add openssl for Prisma compatibility
+- feat(db): add seed script with test data
+- docs: reorganize sprint documentation
 
-**Next Steps:**
-- Create seed data (teams, players)
-- Complete remaining API tests
-- Sprint Review and Retrospective
+**Outcome:** All acceptance criteria met, ready for Sprint 2
+
+---
+
+## Sprint 2 Summary
+
+**Status:** IN PROGRESS (2026-02-02)
+**Branch:** sprint-2/integration (to be created)
+**Sprint Goal:** Connect frontend PWA to real backend API, replacing sync simulation with actual sync
+
+**Focus Areas:**
+- Replace sync simulation with real API calls
+- Implement authentication in frontend
+- Connect offline storage to backend sync
+- Add proper error handling for network failures
 
 ---
 
