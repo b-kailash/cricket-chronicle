@@ -1,0 +1,563 @@
+// Cricket Chronicle Database Schema
+// Sprint 1: Core tables for match scoring and synchronization
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  role          UserRole  @default(PUBLIC)
+  provinceId    Int?      @map("province_id")
+  status        Status    @default(ACTIVE)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  province      Province? @relation(fields: [provinceId], references: [id])
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  PROVINCIAL_ADMIN
+  CLUB_ADMIN
+  SCORER
+  UMPIRE
+  PUBLIC
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// ============================================
+// ORGANIZATIONAL HIERARCHY
+// ============================================
+
+model Province {
+  id          Int       @id @default(autoincrement())
+  name        String
+  regionCode  String?   @map("region_code")
+  country     String?
+  contactName String?   @map("contact_name")
+  contactEmail String?  @map("contact_email")
+  contactPhone String?  @map("contact_phone")
+  status      Status    @default(ACTIVE)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  clubs       Club[]
+  divisions   Division[]
+  competitions Competition[]
+  users       User[]
+
+  @@map("provinces")
+}
+
+model Club {
+  id            Int       @id @default(autoincrement())
+  name          String
+  provinceId    Int       @map("province_id")
+  homeGround    String?   @map("home_ground")
+  gpsLat        Float?    @map("gps_lat")
+  gpsLong       Float?    @map("gps_long")
+  groundCapacity Int?     @map("ground_capacity")
+  facilities    String?
+  pocName       String?   @map("poc_name")
+  pocEmail      String?   @map("poc_email")
+  pocPhone      String?   @map("poc_phone")
+  logoUrl       String?   @map("logo_url")
+  status        Status    @default(ACTIVE)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  province      Province  @relation(fields: [provinceId], references: [id])
+  teams         Team[]
+  homeMatches   Match[]   @relation("HomeVenue")
+
+  @@index([provinceId])
+  @@map("clubs")
+}
+
+model Division {
+  id          Int       @id @default(autoincrement())
+  name        String
+  provinceId  Int       @map("province_id")
+  rankLevel   Int       @map("rank_level")
+  ageGroup    AgeGroup  @default(SENIOR)
+  gender      Gender    @default(MEN)
+  status      Status    @default(ACTIVE)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  province    Province  @relation(fields: [provinceId], references: [id])
+  teams       Team[]
+  competitions Competition[]
+
+  @@index([provinceId])
+  @@map("divisions")
+}
+
+enum AgeGroup {
+  SENIOR
+  U19
+  U17
+  U15
+  U13
+}
+
+enum Gender {
+  MEN
+  WOMEN
+  MIXED
+}
+
+model Team {
+  id            Int       @id @default(autoincrement())
+  label         String    // e.g., "1st XI", "2nd XI"
+  clubId        Int       @map("club_id")
+  divisionId    Int       @map("division_id")
+  pocName       String?   @map("poc_name")
+  pocEmail      String?   @map("poc_email")
+  pocPhone      String?   @map("poc_phone")
+  captainId     Int?      @map("captain_id")
+  viceCaptainId Int?      @map("vice_captain_id")
+  maxSquadSize  Int       @default(22) @map("max_squad_size")
+  status        Status    @default(ACTIVE)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  club          Club      @relation(fields: [clubId], references: [id])
+  division      Division  @relation(fields: [divisionId], references: [id])
+  players       Player[]
+  homeMatches   Match[]   @relation("HomeTeam")
+  awayMatches   Match[]   @relation("AwayTeam")
+  tossWins      Match[]   @relation("TossWinner")
+  battingInnings Innings[] @relation("BattingTeam")
+  bowlingInnings Innings[] @relation("BowlingTeam")
+
+  @@index([clubId])
+  @@index([divisionId])
+  @@map("teams")
+}
+
+// ============================================
+// PLAYERS
+// ============================================
+
+model Player {
+  id              Int           @id @default(autoincrement())
+  firstName       String        @map("first_name")
+  lastName        String        @map("last_name")
+  dateOfBirth     DateTime?     @map("date_of_birth")
+  photoUrl        String?       @map("photo_url")
+  email           String?
+  phone           String?
+  jerseyNumber    Int?          @map("jersey_number")
+  battingStyle    BattingStyle  @default(RIGHT_HAND)
+  bowlingStyle    BowlingStyle?
+  primaryRole     PlayerRole    @default(BATTER)
+  teamId          Int?          @map("team_id")
+  registrationId  String?       @unique @map("registration_id")
+  playingStatus   PlayingStatus @default(ACTIVE)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  team            Team?         @relation(fields: [teamId], references: [id])
+
+  // Delivery relations
+  bowledDeliveries    Delivery[] @relation("Bowler")
+  battedDeliveries    Delivery[] @relation("Striker")
+  nonStrikerDeliveries Delivery[] @relation("NonStriker")
+  dismissals          Delivery[] @relation("DismissedPlayer")
+  fielding            Delivery[] @relation("Fielder")
+
+  // Scorecard relations
+  battingScorecard    BattingScorecard[]
+  bowlingScorecard    BowlingScorecard[]
+
+  @@index([teamId])
+  @@map("players")
+}
+
+enum BattingStyle {
+  RIGHT_HAND
+  LEFT_HAND
+}
+
+enum BowlingStyle {
+  RIGHT_ARM_FAST
+  RIGHT_ARM_MEDIUM
+  RIGHT_ARM_OFF_SPIN
+  RIGHT_ARM_LEG_SPIN
+  LEFT_ARM_FAST
+  LEFT_ARM_MEDIUM
+  LEFT_ARM_ORTHODOX
+  LEFT_ARM_CHINAMAN
+  NONE
+}
+
+enum PlayerRole {
+  BATTER
+  BOWLER
+  ALL_ROUNDER
+  WICKET_KEEPER
+}
+
+enum PlayingStatus {
+  ACTIVE
+  INJURED
+  RETIRED
+  UNAVAILABLE
+}
+
+// ============================================
+// COMPETITION & MATCHES
+// ============================================
+
+model Competition {
+  id              Int           @id @default(autoincrement())
+  name            String
+  season          String        // e.g., "2025-2026"
+  format          MatchFormat
+  startDate       DateTime      @map("start_date")
+  endDate         DateTime?     @map("end_date")
+  provinceId      Int?          @map("province_id")
+  divisionId      Int?          @map("division_id")
+  oversPerInnings Int?          @map("overs_per_innings")
+  pointsWin       Int           @default(4) @map("points_win")
+  pointsLoss      Int           @default(0) @map("points_loss")
+  pointsDraw      Int           @default(2) @map("points_draw")
+  pointsTie       Int           @default(2) @map("points_tie")
+  pointsNoResult  Int           @default(1) @map("points_no_result")
+  status          CompetitionStatus @default(UPCOMING)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  province        Province?     @relation(fields: [provinceId], references: [id])
+  division        Division?     @relation(fields: [divisionId], references: [id])
+  matches         Match[]
+
+  @@index([provinceId])
+  @@index([divisionId])
+  @@map("competitions")
+}
+
+enum MatchFormat {
+  T20
+  ODI
+  LIST_A
+  FIRST_CLASS
+  TEST
+  OTHER
+}
+
+enum CompetitionStatus {
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Match {
+  id              Int           @id @default(autoincrement())
+  localId         String?       @unique @map("local_id") // UUID from offline client
+  matchNumber     String?       @map("match_number")
+  competitionId   Int?          @map("competition_id")
+  homeTeamId      Int           @map("home_team_id")
+  awayTeamId      Int           @map("away_team_id")
+  venueClubId     Int?          @map("venue_club_id")
+  scheduledStart  DateTime?     @map("scheduled_start")
+  actualStart     DateTime?     @map("actual_start")
+  actualEnd       DateTime?     @map("actual_end")
+  tossWinnerId    Int?          @map("toss_winner_id")
+  tossDecision    TossDecision?
+  oversPerInnings Int?          @map("overs_per_innings")
+  status          MatchStatus   @default(SCHEDULED)
+  resultSummary   String?       @map("result_summary")
+  playerOfMatch   Int?          @map("player_of_match")
+  dlsTarget       Int?          @map("dls_target")
+  weatherConditions String?     @map("weather_conditions")
+  pitchReport     String?       @map("pitch_report")
+
+  // Sync tracking
+  lastSyncedAt    DateTime?     @map("last_synced_at")
+  syncStatus      SyncStatus    @default(PENDING) @map("sync_status")
+  createdOffline  Boolean       @default(false) @map("created_offline")
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  competition     Competition?  @relation(fields: [competitionId], references: [id])
+  homeTeam        Team          @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam        Team          @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  venueClub       Club?         @relation("HomeVenue", fields: [venueClubId], references: [id])
+  tossWinner      Team?         @relation("TossWinner", fields: [tossWinnerId], references: [id])
+  innings         Innings[]
+
+  @@index([competitionId])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@index([status])
+  @@index([localId])
+  @@map("matches")
+}
+
+enum TossDecision {
+  BAT
+  FIELD
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  INNINGS_BREAK
+  COMPLETED
+  ABANDONED
+  NO_RESULT
+  POSTPONED
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  CONFLICT
+  FAILED
+}
+
+// ============================================
+// INNINGS & DELIVERIES
+// ============================================
+
+model Innings {
+  id              Int           @id @default(autoincrement())
+  localId         String?       @unique @map("local_id")
+  matchId         Int           @map("match_id")
+  battingTeamId   Int           @map("batting_team_id")
+  bowlingTeamId   Int           @map("bowling_team_id")
+  inningsNumber   Int           @map("innings_number") // 1, 2, 3, 4
+  totalRuns       Int           @default(0) @map("total_runs")
+  totalWickets    Int           @default(0) @map("total_wickets")
+  totalOvers      Int           @default(0) @map("total_overs")
+  totalBalls      Int           @default(0) @map("total_balls")
+
+  // Extras breakdown
+  wides           Int           @default(0)
+  noBalls         Int           @default(0) @map("no_balls")
+  byes            Int           @default(0)
+  legByes         Int           @default(0) @map("leg_byes")
+  penalties       Int           @default(0)
+
+  targetScore     Int?          @map("target_score")
+  isDeclared      Boolean       @default(false) @map("is_declared")
+  isFollowOn      Boolean       @default(false) @map("is_follow_on")
+  isComplete      Boolean       @default(false) @map("is_complete")
+  currentRunRate  Float?        @map("current_run_rate")
+  requiredRunRate Float?        @map("required_run_rate")
+
+  // Sync tracking
+  syncStatus      SyncStatus    @default(PENDING) @map("sync_status")
+  lastSyncedAt    DateTime?     @map("last_synced_at")
+  createdOffline  Boolean       @default(false) @map("created_offline")
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  match           Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  battingTeam     Team          @relation("BattingTeam", fields: [battingTeamId], references: [id])
+  bowlingTeam     Team          @relation("BowlingTeam", fields: [bowlingTeamId], references: [id])
+  deliveries      Delivery[]
+  battingScorecard BattingScorecard[]
+  bowlingScorecard BowlingScorecard[]
+
+  @@unique([matchId, inningsNumber])
+  @@index([matchId])
+  @@index([localId])
+  @@map("innings")
+}
+
+model Delivery {
+  id              Int           @id @default(autoincrement())
+  localId         String?       @unique @map("local_id") // UUID from offline client
+  inningsId       Int           @map("innings_id")
+  overNumber      Int           @map("over_number")
+  ballNumber      Int           @map("ball_number") // Ball within over (1-6 for legal)
+  sequenceNumber  Int           @map("sequence_number") // Absolute position
+
+  // Players
+  bowlerId        Int           @map("bowler_id")
+  strikerId       Int           @map("striker_id")
+  nonStrikerId    Int           @map("non_striker_id")
+
+  // Scoring
+  runsOffBat      Int           @default(0) @map("runs_off_bat")
+  extraType       ExtraType?    @map("extra_type")
+  extraRuns       Int           @default(0) @map("extra_runs")
+  totalRuns       Int           @default(0) @map("total_runs")
+  isLegalDelivery Boolean       @default(true) @map("is_legal_delivery")
+
+  // Wicket
+  isWicket        Boolean       @default(false) @map("is_wicket")
+  wicketType      WicketType?   @map("wicket_type")
+  dismissedPlayerId Int?        @map("dismissed_player_id")
+  fielderId       Int?          @map("fielder_id")
+  fielder2Id      Int?          @map("fielder_2_id") // For run outs
+
+  // Additional
+  shotType        String?       @map("shot_type")
+  ballZone        String?       @map("ball_zone") // For wagon wheel
+  commentary      String?
+  timestamp       DateTime      @default(now())
+
+  // Sync tracking
+  synced          Boolean       @default(false)
+  syncAttempts    Int           @default(0) @map("sync_attempts")
+  syncStatus      SyncStatus    @default(PENDING) @map("sync_status")
+  syncError       String?       @map("sync_error")
+  createdOffline  Boolean       @default(false) @map("created_offline")
+  editedAfterSync Boolean       @default(false) @map("edited_after_sync")
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  innings         Innings       @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  bowler          Player        @relation("Bowler", fields: [bowlerId], references: [id])
+  striker         Player        @relation("Striker", fields: [strikerId], references: [id])
+  nonStriker      Player        @relation("NonStriker", fields: [nonStrikerId], references: [id])
+  dismissedPlayer Player?       @relation("DismissedPlayer", fields: [dismissedPlayerId], references: [id])
+  fielder         Player?       @relation("Fielder", fields: [fielderId], references: [id])
+
+  @@unique([inningsId, overNumber, ballNumber, sequenceNumber])
+  @@index([inningsId])
+  @@index([localId])
+  @@index([synced])
+  @@index([syncStatus])
+  @@map("deliveries")
+}
+
+enum ExtraType {
+  WIDE
+  NO_BALL
+  BYE
+  LEG_BYE
+  PENALTY
+}
+
+enum WicketType {
+  BOWLED
+  CAUGHT
+  LBW
+  RUN_OUT
+  STUMPED
+  HIT_WICKET
+  CAUGHT_AND_BOWLED
+  OBSTRUCTING_FIELD
+  TIMED_OUT
+  HIT_BALL_TWICE
+  RETIRED_OUT
+  RETIRED_HURT
+}
+
+// ============================================
+// SCORECARDS
+// ============================================
+
+model BattingScorecard {
+  id              Int           @id @default(autoincrement())
+  inningsId       Int           @map("innings_id")
+  playerId        Int           @map("player_id")
+  battingPosition Int           @map("batting_position")
+  runsScored      Int           @default(0) @map("runs_scored")
+  ballsFaced      Int           @default(0) @map("balls_faced")
+  fours           Int           @default(0)
+  sixes           Int           @default(0)
+  strikeRate      Float?        @map("strike_rate")
+  dismissalType   WicketType?   @map("dismissal_type")
+  dismissedBy     Int?          @map("dismissed_by") // Bowler
+  fielderId       Int?          @map("fielder_id")
+  status          BatterStatus  @default(NOT_OUT)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  innings         Innings       @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  player          Player        @relation(fields: [playerId], references: [id])
+
+  @@unique([inningsId, playerId])
+  @@index([inningsId])
+  @@map("batting_scorecard")
+}
+
+enum BatterStatus {
+  NOT_OUT
+  OUT
+  RETIRED_HURT
+  RETIRED_OUT
+}
+
+model BowlingScorecard {
+  id              Int           @id @default(autoincrement())
+  inningsId       Int           @map("innings_id")
+  playerId        Int           @map("player_id")
+  overs           Int           @default(0)
+  balls           Int           @default(0)
+  maidens         Int           @default(0)
+  runsConceded    Int           @default(0) @map("runs_conceded")
+  wicketsTaken    Int           @default(0) @map("wickets_taken")
+  economyRate     Float?        @map("economy_rate")
+  wides           Int           @default(0)
+  noBalls         Int           @default(0) @map("no_balls")
+  dotBalls        Int           @default(0) @map("dot_balls")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  innings         Innings       @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+  player          Player        @relation(fields: [playerId], references: [id])
+
+  @@unique([inningsId, playerId])
+  @@index([inningsId])
+  @@map("bowling_scorecard")
+}
