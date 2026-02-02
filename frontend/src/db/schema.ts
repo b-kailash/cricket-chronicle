@@ -14,7 +14,12 @@ export interface OfflineMatch {
   localId: string; // UUID for offline creation
   matchNumber: string;
   date: string;
+  matchDate?: string; // ISO date string for API
   venue: string;
+  // Sprint 2: API integration fields
+  competitionId?: string; // Server competition ID
+  homeTeamId?: string; // Server team ID for home team
+  awayTeamId?: string; // Server team ID for away team
   teams: {
     team1: { id: string; name: string; };
     team2: { id: string; name: string; };
@@ -37,6 +42,7 @@ export interface OfflineDelivery {
   serverId?: string; // ID from server after sync
   localId: string; // UUID for offline creation
   matchId: string; // References OfflineMatch.localId
+  inningsId?: string; // Server innings ID for API sync
   inningsNumber: number; // 1, 2, 3, 4 (for multi-innings formats)
   overNumber: number;
   ballNumber: number; // 1-6 (or more for extras)
@@ -69,6 +75,10 @@ export interface OfflineDelivery {
   createdOffline: boolean;
   editedAfterSync: boolean;
   originalDeliveryId?: string; // For corrections
+  // Sprint 2: Conflict handling fields
+  version?: number; // Version number for optimistic locking
+  hasConflict?: boolean; // True if server has different data
+  serverData?: string; // JSON string of server data for conflict resolution
 }
 
 export interface OfflineInnings {
