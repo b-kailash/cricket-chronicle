@@ -1,6 +1,9 @@
 # Build stage
 FROM node:18-alpine AS builder
 
+# Install OpenSSL for Prisma compatibility
+RUN apk add --no-cache openssl openssl-dev
+
 WORKDIR /app
 
 # Install dependencies
@@ -44,6 +47,9 @@ CMD ["node", "dist/index.js"]
 
 # Development stage (default for docker-compose)
 FROM node:18-alpine AS development
+
+# Install OpenSSL for Prisma compatibility
+RUN apk add --no-cache openssl openssl-dev
 
 WORKDIR /app
 
