@@ -17,10 +17,10 @@
 | S2-002 | Replace Sync Simulation with Real API | 8 | ✅ COMPLETED |
 | S2-003 | Match Management Integration | 5 | ✅ COMPLETED |
 | S2-004 | Offline Queue & Retry Logic | 5 | ✅ COMPLETED |
-| S2-005 | Error Handling & User Feedback | 3 | NOT STARTED |
+| S2-005 | Error Handling & User Feedback | 3 | ✅ COMPLETED |
 
 **Total Story Points:** 26
-**Completed Points:** 23
+**Completed Points:** 26
 **Velocity Target:** 26 points
 
 ---
@@ -329,7 +329,8 @@ function getBackoffDelay(attemptCount: number): number {
 **Story Type:** Feature
 **Story Points:** 3
 **Priority:** Medium
-**Status:** NOT STARTED
+**Status:** ✅ COMPLETED
+**Completed Date:** 2026-02-03
 
 #### Story Statement
 **As a** Scorer
@@ -339,41 +340,40 @@ function getBackoffDelay(attemptCount: number): number {
 #### Acceptance Criteria
 
 1. **Toast Notifications**
-   - [ ] Success toast for sync completion
-   - [ ] Error toast for sync failure
-   - [ ] Info toast for offline mode
-   - [ ] Auto-dismiss after 3-5 seconds
-   - [ ] Manual dismiss option
+   - [x] Success toast for sync completion
+   - [x] Error toast for sync failure
+   - [x] Info toast for offline mode
+   - [x] Auto-dismiss after 3-5 seconds
+   - [x] Manual dismiss option
 
 2. **Loading States**
-   - [ ] Loading spinner during API calls
-   - [ ] Disabled buttons during submission
-   - [ ] Skeleton loaders for lists (optional)
+   - [x] Loading spinner during API calls
+   - [x] Disabled buttons during submission
+   - [ ] Skeleton loaders for lists (optional - deferred)
 
 3. **Error Boundaries**
-   - [ ] Catch React component errors
-   - [ ] Show friendly error message
-   - [ ] "Try Again" button to recover
-   - [ ] Error logged for debugging
+   - [x] Catch React component errors
+   - [x] Show friendly error message
+   - [x] "Try Again" button to recover
+   - [x] Error logged for debugging
 
 4. **Network Status**
-   - [ ] Clear online/offline indicator
-   - [ ] Status visible at all times
-   - [ ] Updates immediately on change
+   - [x] Clear online/offline indicator
+   - [x] Status visible at all times
+   - [x] Updates immediately on change
+
+#### Files Created
+- `frontend/src/contexts/ToastContext.tsx` - Toast notification context and provider
+- `frontend/src/components/Toast.tsx` - Toast display component with animations
+- `frontend/src/components/ErrorBoundary.tsx` - Error boundary with recovery UI
+- `frontend/src/components/LoadingSpinner.tsx` - Loading spinner and LoadingButton
+- `frontend/src/components/NetworkStatus.tsx` - Online/offline status indicator
+
+#### Files Modified
+- `frontend/src/App.tsx` - Integrated ErrorBoundary, ToastProvider, ToastContainer, NetworkStatus
+- `frontend/src/components/SyncStatus.tsx` - Added toast notifications for sync events
 
 #### Technical Implementation
-
-**Files to Create:**
-```
-frontend/src/
-├── components/
-│   ├── Toast.tsx
-│   ├── ErrorBoundary.tsx
-│   ├── LoadingSpinner.tsx
-│   └── NetworkStatus.tsx
-└── services/
-    └── toastService.ts
-```
 
 **Toast Types:**
 ```typescript
@@ -386,6 +386,12 @@ interface Toast {
   duration?: number;
 }
 ```
+
+**Default Durations:**
+- Success: 3 seconds
+- Error: 5 seconds
+- Info: 4 seconds
+- Warning: 4 seconds
 
 ---
 

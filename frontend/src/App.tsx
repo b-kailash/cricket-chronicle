@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { syncService } from './services/syncService';
 import { matchService } from './services/matchService';
 import { OfflineMatch } from './db/schema';
@@ -15,6 +16,9 @@ import MatchList from './components/MatchList';
 import { TestRunner } from './components/TestRunner';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthPage from './components/AuthPage';
+import ErrorBoundary from './components/ErrorBoundary';
+import ToastContainer from './components/Toast';
+import NetworkStatus from './components/NetworkStatus';
 import './App.css';
 
 /**
@@ -225,15 +229,21 @@ function AppContent() {
 }
 
 /**
- * App with Auth Provider
+ * App with Auth Provider, Toast, and Error Boundary
  */
 function App() {
   return (
-    <AuthProvider>
-      <ProtectedRoute fallback={<AuthPage />}>
-        <AppContent />
-      </ProtectedRoute>
-    </AuthProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <ProtectedRoute fallback={<AuthPage />}>
+            <AppContent />
+          </ProtectedRoute>
+        </AuthProvider>
+        <ToastContainer />
+        <NetworkStatus />
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,14 +1,16 @@
 /**
  * Sync Status Component
  * Sprint 2 - S2-004: Offline Queue & Retry Logic
+ * Sprint 2 - S2-005: Error Handling & User Feedback
  *
- * Displays sync queue status with retry controls
+ * Displays sync queue status with retry controls and toast notifications
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { syncService, SyncStatus as SyncStatusType } from '../services/syncService';
 import { retryQueueService, RetryQueueStats } from '../services/retryQueueService';
 import { SyncQueue } from '../db/schema';
+import { useToast } from '../contexts/ToastContext';
 
 interface SyncStatusProps {
   compact?: boolean; // Show compact version in header
@@ -21,6 +23,8 @@ export default function SyncStatus({ compact = false }: SyncStatusProps) {
   const [queueItems, setQueueItems] = useState<SyncQueue[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const toast = useToast();
+  const prevStatsRef = useRef<RetryQueueStats>(queueStats);
 
   useEffect(() => {
     // Subscribe to online status
@@ -29,8 +33,24 @@ export default function SyncStatus({ compact = false }: SyncStatusProps) {
     // Subscribe to sync status
     const unsubSync = syncService.onSyncStatusChange(setSyncStatus);
 
-    // Subscribe to queue changes
+    // Subscribe to queue changes with toast notifications
     const unsubQueue = retryQueueService.onQueueChange((stats) => {
+      const prevStats = prevStatsRef.current;
+
+      // Notify when items are successfully synced (total decreased and no new failures)
+      const itemsSynced = prevStats.total > stats.total && stats.failed <= prevStats.failed;
+      if (itemsSynced && prevStats.total - stats.total > 0) {
+        const count = prevStats.total - stats.total;
+        toast.success(`${count} item${count > 1 ? 's' : ''} synced successfully`);
+      }
+
+      // Notify when new failures occur
+      if (stats.failed > prevStats.failed) {
+        const newFailures = stats.failed - prevStats.failed;
+        toast.error(`${newFailures} item${newFailures > 1 ? 's' : ''} failed to sync`);
+      }
+
+      prevStatsRef.current = stats;
       setQueueStats(stats);
     });
 
@@ -39,7 +59,7 @@ export default function SyncStatus({ compact = false }: SyncStatusProps) {
       unsubSync();
       unsubQueue();
     };
-  }, []);
+  }, [toast]);
 
   // Load queue items when expanded
   useEffect(() => {
@@ -60,28 +80,48 @@ export default function SyncStatus({ compact = false }: SyncStatusProps) {
   const handleRetryAll = async () => {
     setIsRetrying(true);
     try {
-      await retryQueueService.retryAllFailed();
+      const count = await retryQueueService.retryAllFailed();
+      if (count > 0) {
+        toast.info(`Retrying ${count} failed item${count > 1 ? 's' : ''}...`);
+      }
     } finally {
       setIsRetrying(false);
     }
   };
 
   const handleRetryItem = async (itemId: number) => {
+    toast.info('Retrying item...');
     await retryQueueService.retryItem(itemId);
   };
 
   const handleClearFailed = async () => {
-    await retryQueueService.clearFailed();
+    const count = await retryQueueService.clearFailed();
+    if (count > 0) {
+      toast.warning(`Cleared ${count} failed item${count > 1 ? 's' : ''}`);
+    }
   };
 
   const handleClearItem = async (itemId: number) => {
     await retryQueueService.clearItem(itemId);
+    toast.warning('Item removed from queue');
   };
 
   const handleForceSync = async () => {
     setIsRetrying(true);
+    toast.info('Starting sync...');
     try {
-      await syncService.triggerSync();
+      const result = await syncService.triggerSync();
+      if (result.success) {
+        if (result.syncedCount > 0) {
+          toast.success(`Synced ${result.syncedCount} item${result.syncedCount > 1 ? 's' : ''}`);
+        } else {
+          toast.info('Everything is up to date');
+        }
+      } else if (result.failedCount > 0) {
+        toast.error(`${result.failedCount} item${result.failedCount > 1 ? 's' : ''} failed to sync`);
+      }
+    } catch {
+      toast.error('Sync failed. Please try again.');
     } finally {
       setIsRetrying(false);
     }
