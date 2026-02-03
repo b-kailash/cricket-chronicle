@@ -112,9 +112,12 @@ export interface SyncQueue {
   operation: 'create' | 'update' | 'delete';
   payload: any; // The data to sync
   attempts: number;
+  maxAttempts: number; // Maximum retry attempts (default 10)
   lastAttempt: number | null;
+  nextRetryAt: number | null; // Timestamp for next retry (exponential backoff)
   error?: string;
   priority: number; // Higher = more important
+  status: 'pending' | 'retrying' | 'failed' | 'completed'; // Queue item status
   createdAt: number;
 }
 
@@ -143,6 +146,15 @@ export class CricketChronicleDB extends Dexie {
       deliveries: '++id, localId, serverId, matchId, [matchId+inningsNumber+sequence], sequence, synced, syncStatus, timestamp',
       innings: '++id, localId, serverId, matchId, [matchId+inningsNumber], syncStatus',
       syncQueue: '++id, entityType, entityId, priority, attempts, createdAt',
+      appState: '++id, key'
+    });
+
+    // Version 2: Add retry queue fields
+    this.version(2).stores({
+      matches: '++id, localId, serverId, matchNumber, status, syncStatus, createdAt',
+      deliveries: '++id, localId, serverId, matchId, [matchId+inningsNumber+sequence], sequence, synced, syncStatus, timestamp',
+      innings: '++id, localId, serverId, matchId, [matchId+inningsNumber], syncStatus',
+      syncQueue: '++id, entityType, entityId, priority, attempts, status, nextRetryAt, createdAt',
       appState: '++id, key'
     });
   }

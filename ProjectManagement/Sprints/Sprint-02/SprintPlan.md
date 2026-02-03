@@ -3,9 +3,23 @@
 **Sprint Type:** Integration Sprint
 **Sprint Duration:** 3 Sessions
 **Sprint Start:** 2026-02-02
-**Sprint Status:** PLANNING
+**Sprint Status:** IN PROGRESS (88% Complete)
 **Branch:** sprint-2/integration
 **Sprint Goal:** Connect the frontend PWA to the real backend API, replacing sync simulation with actual synchronization
+
+---
+
+## Sprint Progress
+
+| Story | Points | Status |
+|-------|--------|--------|
+| S2-001: Frontend Authentication Service | 5 | ✅ COMPLETED |
+| S2-002: Replace Sync Simulation with Real API | 8 | ✅ COMPLETED |
+| S2-003: Match Management Integration | 5 | ✅ COMPLETED |
+| S2-004: Offline Queue & Retry Logic | 5 | ✅ COMPLETED |
+| S2-005: Error Handling & User Feedback | 3 | NOT STARTED |
+
+**Completed:** 23/26 points (88%)
 
 ---
 
@@ -45,19 +59,19 @@ This sprint focuses on frontend integration with the existing backend. No new ba
 
 ## User Stories & Story Points
 
-### Story 1: Frontend Authentication Service (5 points)
+### Story 1: Frontend Authentication Service (5 points) ✅ COMPLETED
 **As a** Scorer
 **I want** to log in to the application
 **So that** my scoring data is associated with my account and syncs to the server
 
 **Acceptance Criteria:**
-- [ ] Login page with email/password form
-- [ ] Registration page for new users
-- [ ] JWT tokens stored securely in frontend
-- [ ] Automatic token refresh before expiration
-- [ ] Logout functionality clears tokens
-- [ ] Protected routes redirect to login if not authenticated
-- [ ] Error messages for invalid credentials
+- [x] Login page with email/password form
+- [x] Registration page for new users
+- [x] JWT tokens stored securely in frontend
+- [x] Automatic token refresh before expiration
+- [x] Logout functionality clears tokens
+- [x] Protected routes redirect to login if not authenticated
+- [x] Error messages for invalid credentials
 
 **Technical Tasks:**
 1. Create AuthContext for global auth state
@@ -78,19 +92,19 @@ This sprint focuses on frontend integration with the existing backend. No new ba
 
 ---
 
-### Story 2: Replace Sync Simulation with Real API (8 points)
+### Story 2: Replace Sync Simulation with Real API (8 points) ✅ COMPLETED
 **As a** Scorer
 **I want** my deliveries to sync to the real server
 **So that** match data is persisted centrally and accessible from any device
 
 **Acceptance Criteria:**
-- [ ] syncService.ts calls real backend API instead of simulation
-- [ ] Deliveries sync individually when online
-- [ ] Batch sync available for multiple pending deliveries
-- [ ] Sync status updates in real-time (pending → synced)
-- [ ] LocalId to ServerId mapping stored after sync
-- [ ] Conflict detection handled (show notification)
-- [ ] Network errors don't crash the app
+- [x] syncService.ts calls real backend API instead of simulation
+- [x] Deliveries sync individually when online
+- [x] Batch sync available for multiple pending deliveries
+- [x] Sync status updates in real-time (pending → synced)
+- [x] LocalId to ServerId mapping stored after sync
+- [x] Conflict detection handled (409 response with resolution)
+- [x] Network errors don't crash the app
 
 **Technical Tasks:**
 1. Create apiClient.ts with axios/fetch wrapper
@@ -109,18 +123,18 @@ This sprint focuses on frontend integration with the existing backend. No new ba
 
 ---
 
-### Story 3: Match Management Integration (5 points)
+### Story 3: Match Management Integration (5 points) ✅ COMPLETED
 **As a** Scorer
 **I want** to create and view matches from the server
 **So that** matches are stored centrally and officials can be assigned
 
 **Acceptance Criteria:**
-- [ ] Match list fetches from backend when online
-- [ ] New matches created via API
-- [ ] Matches created offline sync when connection available
-- [ ] Innings creation through API
-- [ ] Team selection from backend team data
-- [ ] Match details page shows server data
+- [x] Match list fetches from backend when online
+- [x] New matches created via API
+- [x] Matches created offline sync when connection available
+- [x] Innings creation through API
+- [x] Team selection from backend team data
+- [x] Match list shows merged local/server data
 
 **Technical Tasks:**
 1. Create matchApiService.ts for backend calls
@@ -139,19 +153,19 @@ This sprint focuses on frontend integration with the existing backend. No new ba
 
 ---
 
-### Story 4: Offline Queue & Retry Logic (5 points)
+### Story 4: Offline Queue & Retry Logic (5 points) ✅ COMPLETED
 **As a** Scorer
 **I want** failed syncs to automatically retry
 **So that** I don't lose data due to temporary network issues
 
 **Acceptance Criteria:**
-- [ ] Failed syncs added to retry queue
-- [ ] Exponential backoff for retries (1s, 2s, 4s, 8s, max 60s)
-- [ ] Maximum retry attempts (10) before marking as failed
-- [ ] Manual retry button for failed items
-- [ ] Queue persisted in IndexedDB
-- [ ] Background sync when app regains focus
-- [ ] Clear indication of pending sync items
+- [x] Failed syncs added to retry queue
+- [x] Exponential backoff for retries (1s, 2s, 4s, 8s, max 60s)
+- [x] Maximum retry attempts (10) before marking as failed
+- [x] Manual retry button for failed items
+- [x] Queue persisted in IndexedDB
+- [x] Background sync when app regains focus
+- [x] Clear indication of pending sync items (SyncStatus component)
 
 **Technical Tasks:**
 1. Create SyncQueue class in IndexedDB
@@ -388,15 +402,15 @@ A user story is considered DONE when:
 
 ## Session Plan
 
-### Session 1: Authentication & API Client
+### Session 1: Authentication & API Client ✅ COMPLETED
 **Duration:** ~2 hours
 
 **Tasks:**
-- [ ] Create apiClient.ts with JWT handling
-- [ ] Implement authService.ts
-- [ ] Create Login and Register components
-- [ ] Add AuthContext and ProtectedRoute
-- [ ] Test authentication flow
+- [x] Create apiClient.ts with JWT handling
+- [x] Implement authService.ts
+- [x] Create Login and Register components
+- [x] Add AuthContext and ProtectedRoute
+- [x] Test authentication flow
 
 **Deliverables:**
 - Working login/register flow
@@ -404,15 +418,15 @@ A user story is considered DONE when:
 
 ---
 
-### Session 2: Sync Integration
+### Session 2: Sync Integration ✅ COMPLETED
 **Duration:** ~2 hours
 
 **Tasks:**
-- [ ] Update syncService.ts for real API
-- [ ] Implement batch sync
-- [ ] Add conflict handling
-- [ ] Create sync queue with retry logic
-- [ ] Update match management for API
+- [x] Update syncService.ts for real API
+- [x] Implement batch sync
+- [x] Add conflict handling
+- [x] Create sync queue with retry logic
+- [x] Update match management for API
 
 **Deliverables:**
 - Real delivery sync working
@@ -421,7 +435,7 @@ A user story is considered DONE when:
 
 ---
 
-### Session 3: Testing & Polish
+### Session 3: Testing & Polish (IN PROGRESS)
 **Duration:** ~2 hours
 
 **Tasks:**
@@ -472,10 +486,12 @@ A user story is considered DONE when:
 
 ---
 
-**Sprint Status:** PLANNING (Awaiting Product Owner Approval)
-**Next Step:** Product Owner reviews and approves Sprint 2 plan
-**Estimated Completion:** 3 sessions after approval
+**Sprint Status:** IN PROGRESS (88% Complete)
+**Completed Stories:** S2-001, S2-002, S2-003, S2-004
+**Remaining:** S2-005 (Error Handling & User Feedback)
+**Next Step:** Complete S2-005 and run integration tests
 
 ---
 
+*Last Updated: 2026-02-03*
 *End of Sprint 2 Planning Document*
