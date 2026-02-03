@@ -18,10 +18,13 @@
 | S2-003 | Match Management Integration | 5 | ✅ COMPLETED |
 | S2-004 | Offline Queue & Retry Logic | 5 | ✅ COMPLETED |
 | S2-005 | Error Handling & User Feedback | 3 | ✅ COMPLETED |
+| S2-006 | Fix Delivery Sync Endpoint Mismatch | 1 | ✅ COMPLETED |
+| S2-007 | Implement Team API Endpoints | 3 | NOT STARTED |
 
-**Total Story Points:** 26
-**Completed Points:** 26
-**Velocity Target:** 26 points
+**Total Story Points:** 30
+**Completed Points:** 27
+**Remaining Points:** 3
+**Velocity Target:** 30 points
 
 ---
 
@@ -395,22 +398,144 @@ interface Toast {
 
 ---
 
+### S2-006: Fix Delivery Sync Endpoint Mismatch
+
+**Story Type:** Bug Fix
+**Story Points:** 1
+**Priority:** Critical
+**Status:** ✅ COMPLETED
+**Completed Date:** 2026-02-03
+**GitHub Issue:** [#1](https://github.com/b-kailash/cricket-chronicle/issues/1)
+
+#### Story Statement
+**As a** Scorer
+**I want** delivery syncs to reach the correct API endpoint
+**So that** my scored deliveries are saved to the server
+
+#### Problem Description
+Frontend calls incorrect API endpoints for delivery sync operations:
+
+| Location | Frontend Calls | Backend Expects |
+|----------|---------------|-----------------|
+| syncService.ts:386 | `/api/deliveries/sync` | `/api/deliveries` |
+| syncService.ts:481 | `/api/deliveries/batch-sync` | `/api/deliveries/batch` |
+
+#### Acceptance Criteria
+
+1. **Endpoint Correction**
+   - [x] Single delivery sync calls `/api/deliveries`
+   - [x] Batch delivery sync calls `/api/deliveries/batch`
+   - [x] TypeScript compiles without errors
+
+2. **Verification**
+   - [ ] Delivery sync succeeds when online
+   - [ ] Batch sync successfully processes multiple deliveries
+   - [ ] No 404 errors in network tab
+
+#### Files Modified
+- `frontend/src/services/syncService.ts`
+  - Line 386: Changed `/api/deliveries/sync` to `/api/deliveries`
+  - Line 481: Changed `/api/deliveries/batch-sync` to `/api/deliveries/batch`
+
+#### Actual Time
+~2 minutes
+
+---
+
+### S2-007: Implement Team API Endpoints
+
+**Story Type:** Feature
+**Story Points:** 3
+**Priority:** Critical
+**Status:** NOT STARTED
+**GitHub Issue:** [#1](https://github.com/b-kailash/cricket-chronicle/issues/1)
+
+#### Story Statement
+**As a** Scorer
+**I want** to select teams from a dropdown when creating a match
+**So that** I can quickly set up matches without manual entry
+
+#### Problem Description
+Frontend expects team management endpoints that don't exist in the backend:
+- `GET /api/teams` - List all teams
+- `GET /api/teams/:id` - Get team details
+- `GET /api/teams/:id/players` - Get team roster
+
+#### Acceptance Criteria
+
+1. **Backend Endpoints**
+   - [ ] GET /api/teams returns list of teams
+   - [ ] GET /api/teams/:id returns team details
+   - [ ] GET /api/teams/:id/players returns player roster
+   - [ ] Endpoints require authentication
+
+2. **Database**
+   - [ ] Teams table exists with required fields
+   - [ ] Players table has team relationship
+   - [ ] Seed data includes sample teams and players
+
+3. **Integration**
+   - [ ] Team dropdown populates in MatchSetup
+   - [ ] Player selection works for batting order
+   - [ ] Offline fallback to cached team data
+
+#### Files to Create
+```
+backend/src/
+├── routes/teams.ts        # Team API routes
+├── controllers/teamController.ts
+└── models/team.ts         # (if not exists)
+```
+
+#### Files to Modify
+- `backend/src/app.ts` - Register teams routes
+- `frontend/src/services/teamService.ts` - Verify endpoint paths
+
+#### API Response Format
+```typescript
+// GET /api/teams
+{
+  teams: [
+    { id: 1, name: "Team A", shortName: "TA", logoUrl: "..." },
+    { id: 2, name: "Team B", shortName: "TB", logoUrl: "..." }
+  ]
+}
+
+// GET /api/teams/:id/players
+{
+  players: [
+    { id: 1, name: "Player 1", role: "batsman" },
+    { id: 2, name: "Player 2", role: "bowler" }
+  ]
+}
+```
+
+#### Estimated Time
+30-60 minutes
+
+---
+
 ## Dependencies Between Stories
 
 ```
 S2-001 (Auth) ─────┐
                    ├──► S2-002 (Sync) ──► S2-004 (Queue)
-S2-003 (Matches) ──┘                          │
-                                              ▼
-                                    S2-005 (Error Handling)
+S2-003 (Matches) ──┘         │                │
+       │                     │                ▼
+       │                     │      S2-005 (Error Handling)
+       │                     │
+       ▼                     ▼
+S2-007 (Teams API)    S2-006 (Endpoint Fix)
 ```
 
 **Order of Implementation:**
-1. S2-001: Authentication (required for all API calls)
-2. S2-002: Sync Service (core functionality)
-3. S2-003: Match Management (depends on auth + sync)
-4. S2-004: Retry Queue (enhances sync)
-5. S2-005: Error Handling (polish)
+1. S2-001: Authentication (required for all API calls) ✅
+2. S2-002: Sync Service (core functionality) ✅
+3. S2-003: Match Management (depends on auth + sync) ✅
+4. S2-004: Retry Queue (enhances sync) ✅
+5. S2-005: Error Handling (polish) ✅
+6. **S2-006: Endpoint Fix (critical bug fix)** - NEXT
+7. **S2-007: Teams API (missing backend feature)** - NEXT
 
 ---
 
@@ -437,6 +562,8 @@ S2-003 (Matches) ──┘                          │
 
 ---
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Last Updated:** 2026-02-03
 **Author:** Development Team
+**Change Log:**
+- v1.2: Added S2-006 (Endpoint Fix) and S2-007 (Teams API) from GitHub Issue #1

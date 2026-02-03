@@ -383,7 +383,7 @@ class SyncService {
         else if (delivery.extras.legByes > 0) extraType = 'LEG_BYE';
       }
 
-      const response = await apiClient.post<DeliverySyncResponse>('/api/deliveries/sync', {
+      const response = await apiClient.post<DeliverySyncResponse>('/api/deliveries', {
         inningsId: delivery.inningsId,
         overNumber: delivery.overNumber,
         ballNumber: delivery.ballNumber,
@@ -478,7 +478,7 @@ class SyncService {
         };
       });
 
-      const response = await apiClient.post<BatchSyncResponse>('/api/deliveries/batch-sync', {
+      const response = await apiClient.post<BatchSyncResponse>('/api/deliveries/batch', {
         deliveries: payload,
       });
 
