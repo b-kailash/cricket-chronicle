@@ -3,7 +3,7 @@
 **Test Execution Date:** 2026-02-04
 **Tester:** QA Specialist
 **Environment:** Test Server (192.168.1.235:3000, 192.168.1.235:3001)
-**Status:** API TESTS COMPLETED
+**Status:** API TESTS PASSED (15/15) - Ready for Sprint Closure
 
 ---
 
@@ -894,7 +894,7 @@ This test plan covers all 5 stories in Sprint 2:
 | Health Check | GET /api/health | 200 OK | 200 OK | ✅ PASS |
 | User Registration | POST /api/auth/register | 201 Created + tokens | 201 Created + tokens | ✅ PASS |
 | User Login | POST /api/auth/login | 200 OK + tokens | 200 OK + tokens | ✅ PASS |
-| Token Refresh | POST /api/auth/refresh | 200 OK + new token | 500 Error | ❌ FAIL |
+| Token Refresh | POST /api/auth/refresh | 200 OK + new token | 200 OK + new token | ✅ PASS |
 | Get Current User | GET /api/auth/me | User profile | User profile | ✅ PASS |
 | Protected Endpoint (No Token) | POST /api/deliveries | 401 Unauthorized | 401 Unauthorized | ✅ PASS |
 | Protected Endpoint (Invalid Token) | POST /api/deliveries | 401 Unauthorized | 401 Unauthorized | ✅ PASS |
@@ -907,13 +907,13 @@ This test plan covers all 5 stories in Sprint 2:
 | Single Delivery Sync | POST /api/deliveries | Synced delivery | Synced delivery | ✅ PASS |
 | Batch Delivery Sync | POST /api/deliveries/batch | Sync summary | Sync summary | ✅ PASS |
 
-**API Tests Summary: 14/15 PASSED (93%)**
+**API Tests Summary: 15/15 PASSED (100%)**
 
 ---
 
 ## Defects Found
 
-### DEF-001: Token Refresh Fails with Unique Constraint Error
+### DEF-001: Token Refresh Fails with Unique Constraint Error - **RESOLVED**
 - **Severity:** High
 - **GitHub Issue:** [#2](https://github.com/b-kailash/cricket-chronicle/issues/2)
 - **Test Case:** TC-S2-001-4
@@ -921,7 +921,9 @@ This test plan covers all 5 stories in Sprint 2:
 - **Error:** `Unique constraint failed on the fields: (token)`
 - **Root Cause:** `storeRefreshToken` tries to create a new token without deleting the existing one
 - **Impact:** Users cannot refresh their access tokens, forcing re-login on token expiration
-- **Suggested Fix:** Use `upsert` or delete existing token before creating new one in `authService.ts:261`
+- **Fix Applied:** Changed `storeRefreshToken` to use `upsert` with transaction in `authService.ts`
+- **Fix Verified:** 2026-02-04 on test server (192.168.1.235:3001) - Token refresh now returns 200 OK
+- **Branch:** task/FIX-DEF-001 merged to sprint-2/integration
 
 ---
 
@@ -930,7 +932,7 @@ This test plan covers all 5 stories in Sprint 2:
 Based on API-level testing completed on 2026-02-04:
 
 ### Critical Fixes Required
-1. **Token Refresh Bug (DEF-001)** - Must fix before Sprint 2 can be considered complete. This affects user session continuity.
+~~1. **Token Refresh Bug (DEF-001)** - Must fix before Sprint 2 can be considered complete.~~ **RESOLVED**
 
 ### Suggested Improvements
 1. **Add Endpoint Documentation** - Document expected request/response schemas for all API endpoints
@@ -938,14 +940,15 @@ Based on API-level testing completed on 2026-02-04:
 3. **Test Coverage** - Add integration tests for token refresh flow
 
 ### Next Steps
-1. Fix DEF-001 (Token Refresh bug)
+1. ~~Fix DEF-001 (Token Refresh bug)~~ **DONE**
 2. Run full frontend integration tests
 3. Conduct cross-browser testing
 4. Performance testing with larger datasets
+5. **Close Sprint 2 and merge to main**
 
 ---
 
 **Test Plan Created:** 2026-02-03
 **Last Updated:** 2026-02-04
-**Next Update:** After DEF-001 fix
+**Sprint 2 API Tests:** COMPLETE - All 15 tests passing
 
