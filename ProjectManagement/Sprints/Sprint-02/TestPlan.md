@@ -1,9 +1,9 @@
 # Sprint 2: Frontend-Backend Integration - Comprehensive Test Plan
 
-**Test Execution Date:** 2026-02-03
+**Test Execution Date:** 2026-02-04
 **Tester:** QA Specialist
 **Environment:** Test Server (192.168.1.235:3000, 192.168.1.235:3001)
-**Status:** IN PROGRESS
+**Status:** API TESTS COMPLETED
 
 ---
 
@@ -880,19 +880,72 @@ This test plan covers all 5 stories in Sprint 2:
 
 ---
 
+## API-Level Backend Tests (Executed: 2026-02-04)
+
+### Environment
+- Test Server: 192.168.1.235:3001
+- Branch: sprint-2/integration
+- Database: Seeded with test data (2 teams, 22 players, 1 competition)
+
+### Test Results
+
+| Test | Endpoint | Expected | Actual | Status |
+|------|----------|----------|--------|--------|
+| Health Check | GET /api/health | 200 OK | 200 OK | ✅ PASS |
+| User Registration | POST /api/auth/register | 201 Created + tokens | 201 Created + tokens | ✅ PASS |
+| User Login | POST /api/auth/login | 200 OK + tokens | 200 OK + tokens | ✅ PASS |
+| Token Refresh | POST /api/auth/refresh | 200 OK + new token | 500 Error | ❌ FAIL |
+| Get Current User | GET /api/auth/me | User profile | User profile | ✅ PASS |
+| Protected Endpoint (No Token) | POST /api/deliveries | 401 Unauthorized | 401 Unauthorized | ✅ PASS |
+| Protected Endpoint (Invalid Token) | POST /api/deliveries | 401 Unauthorized | 401 Unauthorized | ✅ PASS |
+| Get All Teams | GET /api/teams | Teams list with clubs | Teams list with clubs | ✅ PASS |
+| Get Team by ID | GET /api/teams/:id | Team with players | Team with players | ✅ PASS |
+| Get Team Players | GET /api/teams/:id/players | Players array | Players array | ✅ PASS |
+| Get All Competitions | GET /api/competitions | Competitions list | Competitions list | ✅ PASS |
+| Create Match | POST /api/matches | Match object + ID | Match object + ID | ✅ PASS |
+| Create Innings | POST /api/matches/:id/innings | Innings object | Innings object | ✅ PASS |
+| Single Delivery Sync | POST /api/deliveries | Synced delivery | Synced delivery | ✅ PASS |
+| Batch Delivery Sync | POST /api/deliveries/batch | Sync summary | Sync summary | ✅ PASS |
+
+**API Tests Summary: 14/15 PASSED (93%)**
+
+---
+
 ## Defects Found
 
-(To be populated during testing)
+### DEF-001: Token Refresh Fails with Unique Constraint Error
+- **Severity:** High
+- **GitHub Issue:** [#2](https://github.com/b-kailash/cricket-chronicle/issues/2)
+- **Test Case:** TC-S2-001-4
+- **Description:** POST /api/auth/refresh fails with Prisma unique constraint error
+- **Error:** `Unique constraint failed on the fields: (token)`
+- **Root Cause:** `storeRefreshToken` tries to create a new token without deleting the existing one
+- **Impact:** Users cannot refresh their access tokens, forcing re-login on token expiration
+- **Suggested Fix:** Use `upsert` or delete existing token before creating new one in `authService.ts:261`
 
 ---
 
 ## Recommendations
 
-(To be populated during testing)
+Based on API-level testing completed on 2026-02-04:
+
+### Critical Fixes Required
+1. **Token Refresh Bug (DEF-001)** - Must fix before Sprint 2 can be considered complete. This affects user session continuity.
+
+### Suggested Improvements
+1. **Add Endpoint Documentation** - Document expected request/response schemas for all API endpoints
+2. **Validation Error Messages** - The delivery sync validation errors are helpful but could specify exact expected formats (e.g., UUID format for localId)
+3. **Test Coverage** - Add integration tests for token refresh flow
+
+### Next Steps
+1. Fix DEF-001 (Token Refresh bug)
+2. Run full frontend integration tests
+3. Conduct cross-browser testing
+4. Performance testing with larger datasets
 
 ---
 
 **Test Plan Created:** 2026-02-03
-**Last Updated:** 2026-02-03
-**Next Update:** During test execution
+**Last Updated:** 2026-02-04
+**Next Update:** After DEF-001 fix
 
