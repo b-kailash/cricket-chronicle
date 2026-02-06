@@ -9,7 +9,8 @@ node_modules/
 
 # Production
 /build
-/dist
+dist/
+**/dist/
 
 # Misc
 .DS_Store
@@ -78,5 +79,4 @@ out/
 sw.js
 workbox-*.js
 precache-manifest.*.js
-.claude/
 gittoken.txt

@@ -14,7 +14,12 @@ export interface OfflineMatch {
   localId: string; // UUID for offline creation
   matchNumber: string;
   date: string;
+  matchDate?: string; // ISO date string for API
   venue: string;
+  // Sprint 2: API integration fields
+  competitionId?: string; // Server competition ID
+  homeTeamId?: string; // Server team ID for home team
+  awayTeamId?: string; // Server team ID for away team
   teams: {
     team1: { id: string; name: string; };
     team2: { id: string; name: string; };
@@ -37,6 +42,7 @@ export interface OfflineDelivery {
   serverId?: string; // ID from server after sync
   localId: string; // UUID for offline creation
   matchId: string; // References OfflineMatch.localId
+  inningsId?: string; // Server innings ID for API sync
   inningsNumber: number; // 1, 2, 3, 4 (for multi-innings formats)
   overNumber: number;
   ballNumber: number; // 1-6 (or more for extras)
@@ -69,6 +75,10 @@ export interface OfflineDelivery {
   createdOffline: boolean;
   editedAfterSync: boolean;
   originalDeliveryId?: string; // For corrections
+  // Sprint 2: Conflict handling fields
+  version?: number; // Version number for optimistic locking
+  hasConflict?: boolean; // True if server has different data
+  serverData?: string; // JSON string of server data for conflict resolution
 }
 
 export interface OfflineInnings {
@@ -102,9 +112,12 @@ export interface SyncQueue {
   operation: 'create' | 'update' | 'delete';
   payload: any; // The data to sync
   attempts: number;
+  maxAttempts: number; // Maximum retry attempts (default 10)
   lastAttempt: number | null;
+  nextRetryAt: number | null; // Timestamp for next retry (exponential backoff)
   error?: string;
   priority: number; // Higher = more important
+  status: 'pending' | 'retrying' | 'failed' | 'completed'; // Queue item status
   createdAt: number;
 }
 
@@ -133,6 +146,15 @@ export class CricketChronicleDB extends Dexie {
       deliveries: '++id, localId, serverId, matchId, [matchId+inningsNumber+sequence], sequence, synced, syncStatus, timestamp',
       innings: '++id, localId, serverId, matchId, [matchId+inningsNumber], syncStatus',
       syncQueue: '++id, entityType, entityId, priority, attempts, createdAt',
+      appState: '++id, key'
+    });
+
+    // Version 2: Add retry queue fields
+    this.version(2).stores({
+      matches: '++id, localId, serverId, matchNumber, status, syncStatus, createdAt',
+      deliveries: '++id, localId, serverId, matchId, [matchId+inningsNumber+sequence], sequence, synced, syncStatus, timestamp',
+      innings: '++id, localId, serverId, matchId, [matchId+inningsNumber], syncStatus',
+      syncQueue: '++id, entityType, entityId, priority, attempts, status, nextRetryAt, createdAt',
       appState: '++id, key'
     });
   }

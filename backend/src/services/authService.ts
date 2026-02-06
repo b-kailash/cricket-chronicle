@@ -253,33 +253,53 @@ class AuthService {
   }
 
   /**
-   * Store refresh token in database
+   * Store refresh token in database.
+   *
+   * Uses upsert on the unique `token` field so that a duplicate POST (e.g. a
+   * client retry after a network timeout) is idempotent rather than throwing a
+   * unique-constraint violation.  The upsert and the subsequent old-token
+   * cleanup are wrapped in a single transaction to keep the two operations
+   * atomic.
    */
   private async storeRefreshToken(userId: number, token: string): Promise<void> {
     const expiresAt = getTokenExpiration(config.jwt.refreshExpiresIn);
 
-    await prisma.refreshToken.create({
-      data: {
-        token,
-        userId,
-        expiresAt,
-      },
-    });
-
-    // Clean up old tokens for this user (keep only last 5)
-    const tokens = await prisma.refreshToken.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      skip: 5,
-    });
-
-    if (tokens.length > 0) {
-      await prisma.refreshToken.deleteMany({
-        where: {
-          id: { in: tokens.map(t => t.id) },
+    await prisma.$transaction(async (tx) => {
+      // Upsert: insert the token if it does not exist; if it already exists
+      // (identical retry) update expiresAt and clear any prior revocation so
+      // the token is usable.
+      await tx.refreshToken.upsert({
+        where: { token },
+        create: {
+          token,
+          userId,
+          expiresAt,
+        },
+        update: {
+          expiresAt,
+          userId,
+          revokedAt: null,
         },
       });
-    }
+
+      // Clean up old tokens for this user: retain only the 5 most recent rows
+      // (by creation date).  Rows beyond that limit are stale and can be safely
+      // removed regardless of revocation status.
+      const staleTokens = await tx.refreshToken.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip: 5,
+        select: { id: true },
+      });
+
+      if (staleTokens.length > 0) {
+        await tx.refreshToken.deleteMany({
+          where: {
+            id: { in: staleTokens.map((t) => t.id) },
+          },
+        });
+      }
+    });
   }
 }
 

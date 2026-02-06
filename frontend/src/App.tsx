@@ -1,9 +1,11 @@
 /**
- * Cricket Chronicle - Proof of Concept App
- * Sprint 0: Offline Sync Demonstration
+ * Cricket Chronicle - Main Application
+ * Sprint 2: Frontend-Backend Integration
  */
 
 import { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { syncService } from './services/syncService';
 import { matchService } from './services/matchService';
 import { OfflineMatch } from './db/schema';
@@ -12,11 +14,19 @@ import ScoringInterface from './components/ScoringInterface';
 import SyncStatus from './components/SyncStatus';
 import MatchList from './components/MatchList';
 import { TestRunner } from './components/TestRunner';
+import ProtectedRoute from './components/ProtectedRoute';
+import AuthPage from './components/AuthPage';
+import ErrorBoundary from './components/ErrorBoundary';
+import ToastContainer from './components/Toast';
+import NetworkStatus from './components/NetworkStatus';
 import './App.css';
 
-function App() {
+/**
+ * Main App Content (Protected)
+ */
+function AppContent() {
+  const { user, logout } = useAuth();
   const [currentView, setCurrentView] = useState<'list' | 'setup' | 'scoring' | 'test'>(() => {
-    // Check if URL has ?test parameter
     if (typeof window !== 'undefined' && window.location.search.includes('test')) {
       return 'test';
     }
@@ -26,12 +36,10 @@ function App() {
   const [isOnline, setIsOnline] = useState(syncService.getOnlineStatus());
 
   useEffect(() => {
-    // Subscribe to online status changes
     const unsubscribe = syncService.onOnlineStatusChange((online) => {
       setIsOnline(online);
     });
 
-    // Load current match if exists
     loadCurrentMatch();
 
     return () => unsubscribe();
@@ -76,7 +84,11 @@ function App() {
     setCurrentView('list');
   };
 
-  // If in test mode, render only the test runner
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  // Test mode view
   if (currentView === 'test') {
     return (
       <div className="app">
@@ -103,12 +115,20 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Cricket Chronicle - PoC</h1>
+        <h1>Cricket Chronicle</h1>
         <div className="header-controls">
+          {user && (
+            <div className="user-info">
+              <span className="user-name">
+                {user.firstName} {user.lastName}
+              </span>
+              <span className="user-role">{user.role}</span>
+            </div>
+          )}
           <button
             className="test-mode-btn"
             onClick={goToTestMode}
-            title="Run Sprint 0 Tests"
+            title="Run Tests"
             style={{
               background: '#9b59b6',
               color: 'white',
@@ -129,6 +149,22 @@ function App() {
             {isOnline ? '🟢 Online' : '🔴 Offline'}
           </button>
           <SyncStatus />
+          <button
+            className="logout-btn"
+            onClick={handleLogout}
+            title="Sign out"
+            style={{
+              background: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              padding: '8px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              marginLeft: '10px',
+            }}
+          >
+            Sign Out
+          </button>
         </div>
       </header>
 
@@ -156,12 +192,58 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Sprint 0 - Technical Spike: Offline Sync Proof of Concept</p>
+        <p>Cricket Chronicle - Ball-by-Ball Scoring</p>
         <p className="tech-stack">
           React + TypeScript + Vite + Dexie.js (IndexedDB) + PWA
         </p>
       </footer>
+
+      <style>{`
+        .user-info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          margin-right: 15px;
+          padding-right: 15px;
+          border-right: 1px solid #444;
+        }
+
+        .user-name {
+          color: #fff;
+          font-weight: 500;
+          font-size: 14px;
+        }
+
+        .user-role {
+          color: #3498db;
+          font-size: 11px;
+          text-transform: uppercase;
+        }
+
+        .logout-btn:hover {
+          background: #c0392b !important;
+        }
+      `}</style>
     </div>
+  );
+}
+
+/**
+ * App with Auth Provider, Toast, and Error Boundary
+ */
+function App() {
+  return (
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <ProtectedRoute fallback={<AuthPage />}>
+            <AppContent />
+          </ProtectedRoute>
+        </AuthProvider>
+        <ToastContainer />
+        <NetworkStatus />
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

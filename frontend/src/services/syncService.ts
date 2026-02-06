@@ -1,11 +1,61 @@
 /**
  * Sync Service for Cricket Chronicle
- * Sprint 0 - Proof of Concept
+ * Sprint 2 - Frontend-Backend Integration
  *
- * Handles online/offline detection and synchronization of data
+ * Handles online/offline detection and synchronization of data with real backend API
  */
 
 import { db, OfflineDelivery, OfflineMatch } from '../db/schema';
+import { apiClient } from './apiClient';
+
+// API Response interfaces
+interface DeliverySyncResponse {
+  success: boolean;
+  delivery?: {
+    id: string;
+    overNumber: number;
+    ballNumber: number;
+    batsmanId: string;
+    bowlerId: string;
+    runs: number;
+    extras: number;
+    extraType: string | null;
+    wicket: boolean;
+    wicketType: string | null;
+    dismissedPlayerId: string | null;
+    timestamp: string;
+    version: number;
+  };
+  message?: string;
+}
+
+interface BatchSyncResponse {
+  success: boolean;
+  synced: number;
+  failed: number;
+  results: Array<{
+    localId: string;
+    success: boolean;
+    serverId?: string;
+    error?: string;
+    conflict?: boolean;
+  }>;
+}
+
+interface ConflictResponse {
+  conflict: true;
+  serverVersion: number;
+  serverData: {
+    id: string;
+    overNumber: number;
+    ballNumber: number;
+    runs: number;
+    extras: number;
+    wicket: boolean;
+    timestamp: string;
+  };
+  message: string;
+}
 
 export type SyncStatus = 'synced' | 'pending' | 'syncing' | 'failed';
 
@@ -150,7 +200,7 @@ class SyncService {
   }
 
   /**
-   * Sync matches
+   * Sync matches to backend API
    */
   private async syncMatches(): Promise<SyncResult> {
     const result: SyncResult = { success: true, syncedCount: 0, failedCount: 0, errors: [] };
@@ -165,20 +215,20 @@ class SyncService {
 
       for (const match of unsyncedMatches) {
         try {
-          // Simulate API call to sync match
-          const synced = await this.simulateMatchSync(match);
+          // Call real API to sync match
+          const syncResult = await this.syncMatchToApi(match);
 
-          if (synced) {
-            // Update match sync status
+          if (syncResult.success) {
+            // Update match sync status and store server ID
             await db.matches.update(match.id!, {
               syncStatus: 'synced',
               lastSynced: Date.now(),
-              syncAttempts: match.syncAttempts + 1
+              syncAttempts: match.syncAttempts + 1,
+              serverId: syncResult.serverId,
             });
             result.syncedCount++;
-            console.log(`[SyncService] Match ${match.matchNumber} synced successfully`);
           } else {
-            throw new Error('Sync failed');
+            throw new Error(syncResult.error || 'Sync failed');
           }
         } catch (error) {
           // Update failed sync
@@ -199,7 +249,7 @@ class SyncService {
   }
 
   /**
-   * Sync deliveries
+   * Sync deliveries to backend API with conflict handling
    */
   private async syncDeliveries(): Promise<SyncResult> {
     const result: SyncResult = { success: true, syncedCount: 0, failedCount: 0, errors: [] };
@@ -212,22 +262,38 @@ class SyncService {
 
       console.log(`[SyncService] Found ${unsyncedDeliveries.length} unsynced deliveries`);
 
+      // Check if sync failure mode is enabled (for testing)
+      if (this.syncFailureMode) {
+        console.log('[SyncService] Sync failure mode enabled, skipping deliveries');
+        return result;
+      }
+
       for (const delivery of unsyncedDeliveries) {
         try {
-          // Simulate API call to sync delivery
-          const synced = this.syncFailureMode ? false : await this.simulateDeliverySync(delivery);
+          // Call real API to sync delivery
+          const syncResult = await this.syncDeliveryToApi(delivery);
 
-          if (synced) {
-            // Update delivery sync status
+          if (syncResult.success) {
+            // Update delivery sync status and store server ID
             await db.deliveries.update(delivery.id!, {
               synced: true,
               syncAttempts: delivery.syncAttempts + 1,
-              syncError: undefined
+              syncError: undefined,
+              serverId: syncResult.serverId,
             });
             result.syncedCount++;
-            console.log(`[SyncService] Delivery ${delivery.localId} synced successfully`);
+          } else if (syncResult.conflict) {
+            // Handle conflict - mark as conflict and store server data
+            await db.deliveries.update(delivery.id!, {
+              syncAttempts: delivery.syncAttempts + 1,
+              syncError: `Conflict: ${syncResult.error}`,
+              hasConflict: true,
+              serverData: syncResult.serverData ? JSON.stringify(syncResult.serverData) : undefined,
+            });
+            result.failedCount++;
+            result.errors.push(`Delivery ${delivery.sequence}: Conflict detected - server has different data`);
           } else {
-            throw new Error('Sync failed');
+            throw new Error(syncResult.error || 'Sync failed');
           }
         } catch (error) {
           // Update failed sync
@@ -248,37 +314,280 @@ class SyncService {
   }
 
   /**
-   * Simulate match sync (API call) - FOR POC ONLY
+   * Sync a match to the backend API
    */
-  private async simulateMatchSync(match: OfflineMatch): Promise<boolean> {
-    // Simulate network delay
-    await this.delay(200 + Math.random() * 300);
-
-    // Simulate 95% success rate
-    const success = Math.random() > 0.05;
-
-    if (success) {
-      console.log(`[API Simulation] Match ${match.matchNumber} synced`);
+  private async syncMatchToApi(match: OfflineMatch): Promise<{
+    success: boolean;
+    serverId?: string;
+    error?: string;
+  }> {
+    try {
+      // Check if match already has a server ID (already synced once)
+      if (match.serverId) {
+        // Update existing match
+        const response = await apiClient.patch(`/api/matches/${match.serverId}`, {
+          status: match.status,
+          venue: match.venue,
+          matchDate: match.matchDate,
+        });
+        console.log(`[SyncService] Match ${match.matchNumber} updated successfully`);
+        return { success: true, serverId: response.data.id };
+      } else {
+        // Create new match on server
+        const response = await apiClient.post('/api/matches', {
+          competitionId: match.competitionId,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+          venue: match.venue,
+          matchDate: match.matchDate,
+          matchNumber: match.matchNumber,
+          status: match.status,
+        });
+        console.log(`[SyncService] Match ${match.matchNumber} created successfully`);
+        return { success: true, serverId: response.data.id };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[SyncService] Match ${match.matchNumber} sync failed:`, errorMessage);
+      return { success: false, error: errorMessage };
     }
-
-    return success;
   }
 
   /**
-   * Simulate delivery sync (API call) - FOR POC ONLY
+   * Sync a single delivery to the backend API
+   * Returns { success, conflict, serverData } to handle conflicts
    */
-  private async simulateDeliverySync(delivery: OfflineDelivery): Promise<boolean> {
-    // Simulate network delay
-    await this.delay(100 + Math.random() * 200);
+  private async syncDeliveryToApi(delivery: OfflineDelivery): Promise<{
+    success: boolean;
+    conflict?: boolean;
+    serverData?: ConflictResponse['serverData'];
+    serverId?: string;
+    error?: string;
+  }> {
+    try {
+      // Calculate total extras from the extras object
+      const totalExtras = delivery.extras
+        ? (delivery.extras.wides || 0) +
+          (delivery.extras.noBalls || 0) +
+          (delivery.extras.byes || 0) +
+          (delivery.extras.legByes || 0) +
+          (delivery.extras.penalties || 0)
+        : 0;
 
-    // Simulate 98% success rate
-    const success = Math.random() > 0.02;
+      // Determine extra type if any extras were recorded
+      let extraType: string | null = null;
+      if (delivery.extras) {
+        if (delivery.extras.wides > 0) extraType = 'WIDE';
+        else if (delivery.extras.noBalls > 0) extraType = 'NO_BALL';
+        else if (delivery.extras.byes > 0) extraType = 'BYE';
+        else if (delivery.extras.legByes > 0) extraType = 'LEG_BYE';
+      }
 
-    if (success) {
-      console.log(`[API Simulation] Delivery ${delivery.sequence} synced`);
+      const response = await apiClient.post<DeliverySyncResponse>('/api/deliveries', {
+        inningsId: delivery.inningsId,
+        overNumber: delivery.overNumber,
+        ballNumber: delivery.ballNumber,
+        batsmanId: delivery.batterId,
+        bowlerId: delivery.bowlerId,
+        runs: delivery.runsScored,
+        extras: totalExtras,
+        extraType: extraType,
+        wicket: delivery.wicket,
+        wicketType: delivery.wicketType?.toUpperCase() || null,
+        dismissedPlayerId: delivery.dismissedPlayerId || null,
+        timestamp: new Date(delivery.timestamp).toISOString(),
+        version: delivery.version || 1,
+        localId: delivery.localId,
+      });
+
+      console.log(`[SyncService] Delivery ${delivery.localId} synced successfully`);
+      return {
+        success: true,
+        serverId: response.data.delivery?.id,
+      };
+    } catch (error) {
+      // Handle 409 Conflict response
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status: number; data: ConflictResponse } };
+        if (axiosError.response?.status === 409) {
+          console.log(`[SyncService] Delivery ${delivery.localId} has conflict`);
+          return {
+            success: false,
+            conflict: true,
+            serverData: axiosError.response.data.serverData,
+            error: axiosError.response.data.message,
+          };
+        }
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[SyncService] Delivery ${delivery.localId} sync failed:`, errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Batch sync multiple deliveries to the backend API
+   * More efficient than syncing one at a time
+   */
+  public async batchSyncDeliveries(deliveries: OfflineDelivery[]): Promise<SyncResult> {
+    const result: SyncResult = { success: true, syncedCount: 0, failedCount: 0, errors: [] };
+
+    if (deliveries.length === 0) {
+      return result;
     }
 
-    return success;
+    try {
+      const payload = deliveries.map(delivery => {
+        // Calculate total extras from the extras object
+        const totalExtras = delivery.extras
+          ? (delivery.extras.wides || 0) +
+            (delivery.extras.noBalls || 0) +
+            (delivery.extras.byes || 0) +
+            (delivery.extras.legByes || 0) +
+            (delivery.extras.penalties || 0)
+          : 0;
+
+        // Determine extra type
+        let extraType: string | null = null;
+        if (delivery.extras) {
+          if (delivery.extras.wides > 0) extraType = 'WIDE';
+          else if (delivery.extras.noBalls > 0) extraType = 'NO_BALL';
+          else if (delivery.extras.byes > 0) extraType = 'BYE';
+          else if (delivery.extras.legByes > 0) extraType = 'LEG_BYE';
+        }
+
+        return {
+          inningsId: delivery.inningsId,
+          overNumber: delivery.overNumber,
+          ballNumber: delivery.ballNumber,
+          batsmanId: delivery.batterId,
+          bowlerId: delivery.bowlerId,
+          runs: delivery.runsScored,
+          extras: totalExtras,
+          extraType: extraType,
+          wicket: delivery.wicket,
+          wicketType: delivery.wicketType?.toUpperCase() || null,
+          dismissedPlayerId: delivery.dismissedPlayerId || null,
+          timestamp: new Date(delivery.timestamp).toISOString(),
+          version: delivery.version || 1,
+          localId: delivery.localId,
+        };
+      });
+
+      const response = await apiClient.post<BatchSyncResponse>('/api/deliveries/batch', {
+        deliveries: payload,
+      });
+
+      // Process batch results
+      for (const batchResult of response.data.results) {
+        const delivery = deliveries.find(d => d.localId === batchResult.localId);
+        if (!delivery) continue;
+
+        if (batchResult.success) {
+          await db.deliveries.update(delivery.id!, {
+            synced: true,
+            syncAttempts: delivery.syncAttempts + 1,
+            syncError: undefined,
+            serverId: batchResult.serverId,
+          });
+          result.syncedCount++;
+        } else if (batchResult.conflict) {
+          await db.deliveries.update(delivery.id!, {
+            syncAttempts: delivery.syncAttempts + 1,
+            syncError: `Conflict: ${batchResult.error}`,
+            hasConflict: true,
+          });
+          result.failedCount++;
+          result.errors.push(`Delivery ${delivery.localId}: Conflict detected`);
+        } else {
+          await db.deliveries.update(delivery.id!, {
+            syncAttempts: delivery.syncAttempts + 1,
+            syncError: batchResult.error,
+          });
+          result.failedCount++;
+          result.errors.push(`Delivery ${delivery.localId}: ${batchResult.error}`);
+        }
+      }
+
+      result.success = result.failedCount === 0;
+      console.log(`[SyncService] Batch sync: ${result.syncedCount} synced, ${result.failedCount} failed`);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[SyncService] Batch sync failed:`, errorMessage);
+      result.success = false;
+      result.errors.push(errorMessage);
+
+      // Mark all deliveries as failed
+      for (const delivery of deliveries) {
+        await db.deliveries.update(delivery.id!, {
+          syncAttempts: delivery.syncAttempts + 1,
+          syncError: errorMessage,
+        });
+        result.failedCount++;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Resolve a delivery conflict by choosing local or server version
+   */
+  public async resolveConflict(
+    deliveryId: number,
+    resolution: 'local' | 'server'
+  ): Promise<boolean> {
+    try {
+      const delivery = await db.deliveries.get(deliveryId);
+      if (!delivery || !delivery.hasConflict) {
+        console.warn(`[SyncService] No conflict found for delivery ${deliveryId}`);
+        return false;
+      }
+
+      if (resolution === 'server' && delivery.serverData) {
+        // Accept server version - update local with server data
+        const serverData = JSON.parse(delivery.serverData);
+        await db.deliveries.update(deliveryId, {
+          overNumber: serverData.overNumber,
+          ballNumber: serverData.ballNumber,
+          runsScored: serverData.runs,
+          totalRuns: serverData.runs + (serverData.extras || 0),
+          wicket: serverData.wicket,
+          synced: true,
+          hasConflict: false,
+          serverData: undefined,
+          syncError: undefined,
+        });
+        console.log(`[SyncService] Conflict resolved with server version for delivery ${deliveryId}`);
+      } else {
+        // Keep local version - retry sync with force flag
+        await db.deliveries.update(deliveryId, {
+          hasConflict: false,
+          serverData: undefined,
+          syncError: undefined,
+          synced: false, // Will be synced on next attempt
+          version: (delivery.version || 1) + 1, // Increment version
+        });
+        console.log(`[SyncService] Conflict resolved with local version for delivery ${deliveryId}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`[SyncService] Failed to resolve conflict:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all deliveries with conflicts
+   */
+  public async getConflicts(): Promise<OfflineDelivery[]> {
+    return await db.deliveries.filter(d => d.hasConflict === true).toArray();
   }
 
   /**
@@ -286,13 +595,6 @@ class SyncService {
    */
   private notifySyncListeners(status: SyncStatus) {
     this.syncListeners.forEach(listener => listener(status));
-  }
-
-  /**
-   * Utility: delay function
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -380,15 +682,6 @@ class SyncService {
     this.syncFailureMode = enabled;
   }
 
-  /**
-   * Override simulate methods to respect failure mode
-   */
-  private async simulateDeliverySyncWithFailure(delivery: OfflineDelivery): Promise<boolean> {
-    if (this.syncFailureMode) {
-      return false;
-    }
-    return await this.simulateDeliverySync(delivery);
-  }
 }
 
 // Export singleton instance
