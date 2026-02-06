@@ -1,6 +1,6 @@
 # Cricket Chronicle - Sprint Index
 
-**Last Updated:** 2026-02-02
+**Last Updated:** 2026-02-06
 
 This document tracks all sprints in the Cricket Chronicle project, providing quick access to sprint plans, stories, test plans, and retrospectives.
 
@@ -20,7 +20,7 @@ This document tracks all sprints in the Cricket Chronicle project, providing qui
 |----------|-------------|--------|-------|--------------|------------------|
 | Sprint 0 | Technical Spike - Offline Sync PoC | Completed | 2026-02-01 | 13 | [Sprint-00/](Sprints/Sprint-00/) |
 | Sprint 1 | Backend Infrastructure & Containerized Database | Completed | 2026-02-02 | 29 | [Sprint-01/](Sprints/Sprint-01/) |
-| Sprint 2 | Frontend-Backend Integration & Real Sync | In Progress | 2026-02-02 | TBD | [Sprint-02/](Sprints/Sprint-02/) |
+| Sprint 2 | Frontend-Backend Integration & Real Sync | Completed | 2026-02-02 to 2026-02-06 | 30 | [Sprint-02/](Sprints/Sprint-02/) |
 | Sprint 3 | Player & Officials Registration | Not Started | TBD | TBD | - |
 | Sprint 4 | Match Creation & Setup | Not Started | TBD | TBD | - |
 | Sprint 5 | Ball-by-Ball Scoring Engine (Basic) | Not Started | TBD | TBD | - |
@@ -60,8 +60,8 @@ Each Sprint directory contains:
 |----------|-------------|------|
 | Sprint Plan | Frontend-backend integration planning | [SprintPlan.md](Sprints/Sprint-02/SprintPlan.md) |
 | Stories | User stories and acceptance criteria | [Stories.md](Sprints/Sprint-02/Stories.md) |
-| Test Plan | Test execution plan | Pending |
-| Retrospective | Sprint retrospective | Pending Sprint Closure |
+| Test Plan | Test execution plan and results | [TestPlan.md](Sprints/Sprint-02/TestPlan.md) |
+| Retrospective | Sprint retrospective document | [Retrospective.md](Sprints/Sprint-02/Retrospective.md) |
 
 ---
 
@@ -69,17 +69,18 @@ Each Sprint directory contains:
 
 ### Overall Progress
 - **Total Sprints Planned:** 8 (MVP)
-- **Sprints Completed:** 2 (Sprint 0, Sprint 1)
-- **Current Sprint:** Sprint 2 (In Progress)
-- **Overall Completion:** 25% (2/8 sprints)
+- **Sprints Completed:** 3 (Sprint 0, Sprint 1, Sprint 2)
+- **Current Sprint:** Sprint 3 (Not Started)
+- **Overall Completion:** 38% (3/8 sprints)
 
 ### Velocity Tracking
 | Sprint | Planned SP | Completed SP | Velocity | Notes |
 |--------|-----------|--------------|----------|-------|
 | Sprint 0 | 13 | 13 | 100% | Technical Spike - All tests passed |
 | Sprint 1 | 29 | 29 | 100% | All 5 stories completed, 19/19 tests passed |
+| Sprint 2 | 26 | 30 | 115% | All 7 stories completed, 15/15 tests passed, 1 defect resolved |
 
-**Average Velocity:** 21 points per sprint
+**Average Velocity:** 24 points per sprint
 
 ---
 
@@ -88,9 +89,9 @@ Each Sprint directory contains:
 ### Phase 1: Foundation (Sprints 0-2)
 - [x] Sprint 0: Technical spike - offline architecture validation
 - [x] Sprint 1: Backend infrastructure, containerized database
-- [ ] Sprint 2: Frontend integration, real sync implementation
+- [x] Sprint 2: Frontend integration, real sync implementation
 
-**Phase 1 Status:** 67% (2/3 sprints completed)
+**Phase 1 Status:** 100% (3/3 sprints completed)
 
 ### Phase 2: Core Features (Sprints 3-5)
 - [ ] Sprint 3: Player management, officials registration
@@ -106,7 +107,7 @@ Each Sprint directory contains:
 
 **Phase 3 Status:** Not Started (0/3 sprints completed)
 
-**MVP Overall Status:** 25% (2/8 sprints completed)
+**MVP Overall Status:** 38% (3/8 sprints completed)
 
 ---
 
@@ -156,15 +157,28 @@ Each Sprint directory contains:
 
 ## Sprint 2 Summary
 
-**Status:** IN PROGRESS (2026-02-02)
-**Branch:** sprint-2/integration (to be created)
-**Sprint Goal:** Connect frontend PWA to real backend API, replacing sync simulation with actual sync
+**Status:** COMPLETED (2026-02-06)
+**Branch:** sprint-2/integration (merged to main)
+**Story Points:** 30
+**Test Results:** 15/15 tests PASSED (100%)
 
-**Focus Areas:**
-- Replace sync simulation with real API calls
-- Implement authentication in frontend
-- Connect offline storage to backend sync
-- Add proper error handling for network failures
+**Key Deliverables:**
+- Frontend Authentication Service (JWT token management)
+- Real API integration replacing sync simulation
+- Match Management CRUD operations with real backend
+- Offline Queue with exponential backoff retry logic
+- Error Handling with toast notifications and NetworkStatus
+- Team and Competition API endpoints
+- Token Refresh fix (DEF-001 resolved)
+
+**Git Commits:**
+- Multiple commits for S2-001 through S2-005
+- fix: delivery sync endpoint mismatch (S2-006)
+- feat: implement team and competition endpoints (S2-007)
+- fix(auth): resolve token refresh unique constraint error (DEF-001)
+- chore: add backend test files and agent configurations
+
+**Outcome:** All acceptance criteria met, production-ready integration, ready for Sprint 3
 
 ---
 
@@ -187,7 +201,7 @@ Each Sprint directory contains:
 - Each sprint follows 3-session structure: Planning, Development, Testing/Retrospective
 - Sprint documents are organized in subdirectories for better organization
 - Sprint Index is updated after each sprint review
-- Velocity baseline established: ~21 points per sprint
+- Velocity baseline established: ~24 points per sprint (updated after Sprint 2)
 
 ---
 
