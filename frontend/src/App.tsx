@@ -19,6 +19,7 @@ import AuthPage from './components/AuthPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/Toast';
 import NetworkStatus from './components/NetworkStatus';
+import ProvinceManagement from './components/ProvinceManagement';
 import './App.css';
 
 /**
@@ -26,7 +27,7 @@ import './App.css';
  */
 function AppContent() {
   const { user, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<'list' | 'setup' | 'scoring' | 'test'>(() => {
+  const [currentView, setCurrentView] = useState<'list' | 'setup' | 'scoring' | 'test' | 'provinces'>(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('test')) {
       return 'test';
     }
@@ -115,7 +116,23 @@ function AppContent() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Cricket Chronicle</h1>
+        <div className="header-left">
+          <h1>Cricket Chronicle</h1>
+          <nav className="main-nav">
+            <button
+              className={`nav-btn ${currentView === 'list' ? 'active' : ''}`}
+              onClick={() => setCurrentView('list')}
+            >
+              Matches
+            </button>
+            <button
+              className={`nav-btn ${currentView === 'provinces' ? 'active' : ''}`}
+              onClick={() => setCurrentView('provinces')}
+            >
+              Provinces
+            </button>
+          </nav>
+        </div>
         <div className="header-controls">
           {user && (
             <div className="user-info">
@@ -189,6 +206,10 @@ function AppContent() {
             onBack={handleBackToList}
           />
         )}
+
+        {currentView === 'provinces' && (
+          <ProvinceManagement />
+        )}
       </main>
 
       <footer className="app-footer">
@@ -199,6 +220,40 @@ function AppContent() {
       </footer>
 
       <style>{`
+        .header-left {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+        }
+
+        .header-left h1 {
+          margin: 0;
+        }
+
+        .main-nav {
+          display: flex;
+          gap: 5px;
+        }
+
+        .nav-btn {
+          background: transparent;
+          color: #fff;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-btn.active {
+          background: #3498db;
+        }
+
         .user-info {
           display: flex;
           flex-direction: column;

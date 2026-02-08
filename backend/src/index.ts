@@ -15,6 +15,7 @@ import matchRoutes from './routes/matches';
 import deliveryRoutes from './routes/deliveries';
 import teamRoutes from './routes/teams';
 import competitionRoutes from './routes/competitions';
+import provinceRoutes from './routes/provinces';
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/matches', matchRoutes);
 app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/competitions', competitionRoutes);
+app.use('/api/provinces', provinceRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

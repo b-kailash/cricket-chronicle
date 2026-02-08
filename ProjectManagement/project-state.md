@@ -10,9 +10,13 @@
 
 ## **Active Context**
 
-* **Primary Branch**: sprint-3/organization-hierarchy
-* **Latest Commit Hash**: [Sprint 3 planning artifacts to be committed]
+* **Primary Branch**: main (Sprint 2 merged code)
+* **Latest Commit Hash**: 2469614 (docs: Sprint 2 closure - retrospective and index updates)
 * **Last Updated**: 2026-02-06
+* **Test Server Status**: DEPLOYED - All services running
+  - Backend API: http://192.168.1.235:3001
+  - PostgreSQL: 192.168.1.235:5432
+  - Health Check: Passing
 
 ---
 
