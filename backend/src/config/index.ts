@@ -23,10 +23,10 @@ export const config = {
   // CORS
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
 
-  // Rate limiting
+  // Rate limiting (0 = disabled)
   rateLimit: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // limit each IP to 500 requests per windowMs
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // default 15 minutes
+    max: parseInt(process.env.RATE_LIMIT_MAX || '500', 10), // 0 = no limit
   },
 
   // Bcrypt
