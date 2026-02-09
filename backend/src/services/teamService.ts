@@ -229,16 +229,25 @@ class TeamManagementService {
     return team;
   }
 
-  async deleteTeam(id: number) {
+  async deleteTeam(id: number, force?: boolean) {
     const existing = await prisma.team.findUnique({
       where: { id },
       include: {
-        _count: { select: { homeMatches: true, awayMatches: true } },
+        _count: { select: { homeMatches: true, awayMatches: true, players: true } },
       },
     });
 
     if (!existing) {
       throw ApiError.notFound('Team not found');
+    }
+
+    if (force) {
+      // Delete players first
+      await prisma.player.deleteMany({ where: { teamId: id } });
+      // Delete matches where this team is home or away (cascade handles innings/deliveries)
+      await prisma.match.deleteMany({ where: { OR: [{ homeTeamId: id }, { awayTeamId: id }] } });
+      await prisma.team.delete({ where: { id } });
+      return { id, deleted: true };
     }
 
     const totalMatches = existing._count.homeMatches + existing._count.awayMatches;

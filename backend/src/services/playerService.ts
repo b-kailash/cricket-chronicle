@@ -271,7 +271,7 @@ class PlayerService {
     return player;
   }
 
-  async deletePlayer(id: number) {
+  async deletePlayer(id: number, force?: boolean) {
     const existing = await prisma.player.findUnique({
       where: { id },
       include: {
@@ -286,6 +286,11 @@ class PlayerService {
 
     if (!existing) {
       throw ApiError.notFound('Player not found');
+    }
+
+    if (force) {
+      await prisma.player.delete({ where: { id } });
+      return { id, deleted: true };
     }
 
     const totalDeliveries = existing._count.bowledDeliveries + existing._count.battedDeliveries;

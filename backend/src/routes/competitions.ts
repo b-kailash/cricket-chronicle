@@ -7,7 +7,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
-import { optionalAuth } from '../middleware/auth';
+import { authenticate, authorize, optionalAuth } from '../middleware/auth';
 import { ApiError } from '../middleware/errorHandler';
 
 const router = Router();
@@ -161,6 +161,52 @@ router.get('/:id', optionalAuth, async (req: Request, res: Response, next: NextF
     };
 
     res.status(200).json(transformed);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/competitions/:id
+ * Hard delete competition. Fails if matches exist unless ?force=true.
+ */
+router.delete('/:id', authenticate, authorize('SUPER_ADMIN', 'PROVINCIAL_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+
+    if (isNaN(id)) {
+      throw ApiError.badRequest('Invalid competition ID');
+    }
+
+    const force = req.query.force === 'true';
+
+    const competition = await prisma.competition.findUnique({
+      where: { id },
+      include: { _count: { select: { matches: true } } },
+    });
+
+    if (!competition) {
+      throw ApiError.notFound('Competition not found');
+    }
+
+    if (competition._count.matches > 0 && !force) {
+      throw ApiError.badRequest(
+        `Cannot delete competition with ${competition._count.matches} match(es). Use ?force=true to force delete.`,
+        'COMPETITION_HAS_MATCHES'
+      );
+    }
+
+    if (force && competition._count.matches > 0) {
+      // Delete all matches (cascade handles innings/deliveries/scorecards)
+      await prisma.match.deleteMany({ where: { competitionId: id } });
+    }
+
+    await prisma.competition.delete({ where: { id } });
+
+    res.status(200).json({
+      success: true,
+      message: 'Competition deleted successfully',
+    });
   } catch (error) {
     next(error);
   }

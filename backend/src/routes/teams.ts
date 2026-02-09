@@ -171,12 +171,21 @@ router.delete('/:id', authenticate, async (req: Request, res: Response, next: Ne
       throw ApiError.badRequest('Invalid team ID');
     }
 
-    const team = await teamManagementService.deleteTeam(id);
+    const force = req.query.force === 'true';
+
+    if (force) {
+      const role = req.user?.role;
+      if (role !== 'SUPER_ADMIN' && role !== 'PROVINCIAL_ADMIN') {
+        throw ApiError.forbidden('Force delete requires admin privileges');
+      }
+    }
+
+    const team = await teamManagementService.deleteTeam(id, force);
 
     res.status(200).json({
       success: true,
       data: team,
-      message: 'Team deactivated successfully',
+      message: force ? 'Team permanently deleted' : 'Team deactivated successfully',
     });
   } catch (error) {
     next(error);

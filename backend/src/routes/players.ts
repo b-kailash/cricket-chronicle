@@ -161,12 +161,21 @@ router.delete('/:id', authenticate, async (req: Request, res: Response, next: Ne
       throw ApiError.badRequest('Invalid player ID');
     }
 
-    const player = await playerService.deletePlayer(id);
+    const force = req.query.force === 'true';
+
+    if (force) {
+      const role = req.user?.role;
+      if (role !== 'SUPER_ADMIN' && role !== 'PROVINCIAL_ADMIN') {
+        throw ApiError.forbidden('Force delete requires admin privileges');
+      }
+    }
+
+    const player = await playerService.deletePlayer(id, force);
 
     res.status(200).json({
       success: true,
       data: player,
-      message: 'Player retired successfully',
+      message: force ? 'Player permanently deleted' : 'Player retired successfully',
     });
   } catch (error) {
     next(error);

@@ -172,7 +172,7 @@ class DivisionService {
     return division;
   }
 
-  async deleteDivision(id: number) {
+  async deleteDivision(id: number, force?: boolean) {
     const existing = await prisma.division.findUnique({
       where: { id },
       include: {
@@ -182,6 +182,24 @@ class DivisionService {
 
     if (!existing) {
       throw ApiError.notFound('Division not found');
+    }
+
+    if (force) {
+      // Get all teams in this division
+      const teams = await prisma.team.findMany({ where: { divisionId: id }, select: { id: true } });
+      const teamIds = teams.map(t => t.id);
+      if (teamIds.length > 0) {
+        // Delete players in those teams
+        await prisma.player.deleteMany({ where: { teamId: { in: teamIds } } });
+        // Delete matches referencing those teams
+        await prisma.match.deleteMany({ where: { OR: [{ homeTeamId: { in: teamIds } }, { awayTeamId: { in: teamIds } }] } });
+        // Delete teams
+        await prisma.team.deleteMany({ where: { divisionId: id } });
+      }
+      // Delete competitions in this division
+      await prisma.competition.deleteMany({ where: { divisionId: id } });
+      await prisma.division.delete({ where: { id } });
+      return { id, deleted: true };
     }
 
     if (existing._count.teams > 0) {

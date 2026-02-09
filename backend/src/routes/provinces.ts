@@ -150,12 +150,22 @@ router.delete('/:id', authenticate, async (req: Request, res: Response, next: Ne
       throw ApiError.badRequest('Invalid province ID');
     }
 
-    const province = await provinceService.deleteProvince(id);
+    const force = req.query.force === 'true';
+
+    // Force delete requires admin role
+    if (force) {
+      const role = req.user?.role;
+      if (role !== 'SUPER_ADMIN' && role !== 'PROVINCIAL_ADMIN') {
+        throw ApiError.forbidden('Force delete requires admin privileges');
+      }
+    }
+
+    const province = await provinceService.deleteProvince(id, force);
 
     res.status(200).json({
       success: true,
       data: province,
-      message: 'Province deactivated successfully',
+      message: force ? 'Province permanently deleted' : 'Province deactivated successfully',
     });
   } catch (error) {
     next(error);

@@ -63,8 +63,8 @@ COPY . .
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Expose API port
-EXPOSE 3001
+# Expose API port and Prisma Studio port
+EXPOSE 3001 5555
 
 # Default command (can be overridden)
 CMD ["npm", "run", "dev"]

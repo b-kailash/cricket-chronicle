@@ -24,6 +24,7 @@ import ClubManagement from './components/ClubManagement';
 import DivisionManagement from './components/DivisionManagement';
 import TeamManagement from './components/TeamManagement';
 import PlayerManagement from './components/PlayerManagement';
+import AdminDashboard from './components/AdminDashboard';
 import './App.css';
 
 /**
@@ -31,7 +32,9 @@ import './App.css';
  */
 function AppContent() {
   const { user, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<'list' | 'setup' | 'scoring' | 'test' | 'provinces' | 'clubs' | 'divisions' | 'teams' | 'players'>(() => {
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'PROVINCIAL_ADMIN';
+
+  const [currentView, setCurrentView] = useState<'list' | 'setup' | 'scoring' | 'test' | 'provinces' | 'clubs' | 'divisions' | 'teams' | 'players' | 'admin'>(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('test')) {
       return 'test';
     }
@@ -159,6 +162,15 @@ function AppContent() {
             >
               Players
             </button>
+            {isAdmin && (
+              <button
+                className={`nav-btn ${currentView === 'admin' ? 'active' : ''}`}
+                onClick={() => setCurrentView('admin')}
+                style={currentView === 'admin' ? { background: '#e67e22' } : {}}
+              >
+                Admin
+              </button>
+            )}
           </nav>
         </div>
         <div className="header-controls">
@@ -253,6 +265,10 @@ function AppContent() {
 
         {currentView === 'players' && (
           <PlayerManagement />
+        )}
+
+        {currentView === 'admin' && isAdmin && (
+          <AdminDashboard />
         )}
       </main>
 

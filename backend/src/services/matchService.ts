@@ -294,6 +294,21 @@ class MatchService {
   }
 
   /**
+   * Delete match (hard delete — cascade handles innings/deliveries/scorecards)
+   */
+  async deleteMatch(id: number) {
+    const existing = await prisma.match.findUnique({ where: { id } });
+
+    if (!existing) {
+      throw ApiError.notFound('Match not found');
+    }
+
+    await prisma.match.delete({ where: { id } });
+
+    return { id };
+  }
+
+  /**
    * Get match sync status
    */
   async getSyncStatus(matchId: number) {

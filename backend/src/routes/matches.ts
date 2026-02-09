@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { matchService } from '../services/matchService';
-import { authenticate, optionalAuth } from '../middleware/auth';
+import { authenticate, authorize, optionalAuth } from '../middleware/auth';
 import { ApiError } from '../middleware/errorHandler';
 
 const router = Router();
@@ -145,6 +145,29 @@ router.patch('/:id', authenticate, async (req: Request, res: Response, next: Nex
     res.status(200).json({
       success: true,
       data: match,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/matches/:id
+ * Hard delete match (cascades to innings/deliveries/scorecards)
+ */
+router.delete('/:id', authenticate, authorize('SUPER_ADMIN', 'PROVINCIAL_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+
+    if (isNaN(id)) {
+      throw ApiError.badRequest('Invalid match ID');
+    }
+
+    await matchService.deleteMatch(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Match deleted successfully',
     });
   } catch (error) {
     next(error);

@@ -19,6 +19,7 @@ import provinceRoutes from './routes/provinces';
 import clubRoutes from './routes/clubs';
 import divisionRoutes from './routes/divisions';
 import playerRoutes from './routes/players';
+import adminRoutes from './routes/admin';
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/provinces', provinceRoutes);
 app.use('/api/clubs', clubRoutes);
 app.use('/api/divisions', divisionRoutes);
 app.use('/api/players', playerRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

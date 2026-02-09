@@ -179,7 +179,7 @@ class ClubService {
     return club;
   }
 
-  async deleteClub(id: number) {
+  async deleteClub(id: number, force?: boolean) {
     const existing = await prisma.club.findUnique({
       where: { id },
       include: {
@@ -189,6 +189,21 @@ class ClubService {
 
     if (!existing) {
       throw ApiError.notFound('Club not found');
+    }
+
+    if (force) {
+      // Get all teams in this club
+      const teams = await prisma.team.findMany({ where: { clubId: id }, select: { id: true } });
+      const teamIds = teams.map(t => t.id);
+      if (teamIds.length > 0) {
+        await prisma.player.deleteMany({ where: { teamId: { in: teamIds } } });
+        await prisma.match.deleteMany({ where: { OR: [{ homeTeamId: { in: teamIds } }, { awayTeamId: { in: teamIds } }] } });
+        await prisma.team.deleteMany({ where: { clubId: id } });
+      }
+      // Delete matches where this club is the venue
+      await prisma.match.deleteMany({ where: { venueClubId: id } });
+      await prisma.club.delete({ where: { id } });
+      return { id, deleted: true };
     }
 
     if (existing._count.teams > 0) {

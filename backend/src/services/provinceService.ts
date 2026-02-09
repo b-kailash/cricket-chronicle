@@ -201,7 +201,7 @@ class ProvinceService {
    * Soft delete province (set status to INACTIVE)
    * Cannot delete if clubs exist under this province
    */
-  async deleteProvince(id: number) {
+  async deleteProvince(id: number, force?: boolean) {
     const existing = await prisma.province.findUnique({
       where: { id },
       include: {
@@ -213,6 +213,35 @@ class ProvinceService {
 
     if (!existing) {
       throw ApiError.notFound('Province not found');
+    }
+
+    if (force) {
+      // Get all clubs and teams under this province
+      const clubs = await prisma.club.findMany({ where: { provinceId: id }, select: { id: true } });
+      const clubIds = clubs.map(c => c.id);
+      if (clubIds.length > 0) {
+        const teams = await prisma.team.findMany({ where: { clubId: { in: clubIds } }, select: { id: true } });
+        const teamIds = teams.map(t => t.id);
+        if (teamIds.length > 0) {
+          await prisma.player.deleteMany({ where: { teamId: { in: teamIds } } });
+          await prisma.match.deleteMany({ where: { OR: [{ homeTeamId: { in: teamIds } }, { awayTeamId: { in: teamIds } }] } });
+          await prisma.team.deleteMany({ where: { clubId: { in: clubIds } } });
+        }
+        // Delete matches where these clubs are the venue
+        await prisma.match.deleteMany({ where: { venueClubId: { in: clubIds } } });
+        await prisma.club.deleteMany({ where: { provinceId: id } });
+      }
+      // Delete divisions and competitions under this province
+      const divisions = await prisma.division.findMany({ where: { provinceId: id }, select: { id: true } });
+      const divisionIds = divisions.map(d => d.id);
+      if (divisionIds.length > 0) {
+        // Teams in divisions already deleted above (by club), but clean up stragglers
+        await prisma.team.deleteMany({ where: { divisionId: { in: divisionIds } } });
+        await prisma.division.deleteMany({ where: { provinceId: id } });
+      }
+      await prisma.competition.deleteMany({ where: { provinceId: id } });
+      await prisma.province.delete({ where: { id } });
+      return { id, deleted: true };
     }
 
     // Check if province has clubs

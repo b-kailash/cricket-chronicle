@@ -6,6 +6,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { matchApiService } from '../services/matchApiService';
 import { syncService } from '../services/syncService';
+import { adminApiService } from '../services/adminService';
+import { useAuth } from '../contexts/AuthContext';
 import { OfflineMatch } from '../db/schema';
 
 interface MatchListProps {
@@ -14,11 +16,14 @@ interface MatchListProps {
 }
 
 export default function MatchList({ onMatchSelected, onNewMatch }: MatchListProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'PROVINCIAL_ADMIN';
   const [matches, setMatches] = useState<OfflineMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(syncService.getOnlineStatus());
   const [error, setError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Load matches on mount and when online status changes
   const loadMatches = useCallback(async () => {
@@ -65,6 +70,29 @@ export default function MatchList({ onMatchSelected, onNewMatch }: MatchListProp
       console.error('Sync failed:', err);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  // Delete a match
+  const handleDeleteMatch = async (e: React.MouseEvent, match: OfflineMatch) => {
+    e.stopPropagation();
+    if (!match.serverId) {
+      setError('Cannot delete a match that has not been synced to the server.');
+      return;
+    }
+    if (!window.confirm(`Delete match "${match.matchNumber}"? This will permanently remove all innings, deliveries, and scorecards.`)) {
+      return;
+    }
+    setDeletingId(match.localId || match.serverId || null);
+    try {
+      await adminApiService.deleteMatch(parseInt(match.serverId, 10));
+      await loadMatches();
+      setError(null);
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setError('Failed to delete match.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -177,6 +205,16 @@ export default function MatchList({ onMatchSelected, onNewMatch }: MatchListProp
                   {match.status === 'completed' && 'Match Completed'}
                   {match.status === 'scheduled' && 'Scheduled'}
                 </span>
+                {isAdmin && match.serverId && (
+                  <button
+                    className="btn-delete-match"
+                    onClick={(e) => handleDeleteMatch(e, match)}
+                    disabled={deletingId === (match.localId || match.serverId)}
+                    title="Delete match permanently"
+                  >
+                    {deletingId === (match.localId || match.serverId) ? 'Deleting...' : 'Delete'}
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -263,6 +301,31 @@ export default function MatchList({ onMatchSelected, onNewMatch }: MatchListProp
         }
 
         .btn-secondary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .match-card-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .btn-delete-match {
+          background: #e74c3c;
+          color: white;
+          border: none;
+          padding: 4px 10px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+        }
+
+        .btn-delete-match:hover:not(:disabled) {
+          background: #c0392b;
+        }
+
+        .btn-delete-match:disabled {
           opacity: 0.6;
           cursor: not-allowed;
         }
