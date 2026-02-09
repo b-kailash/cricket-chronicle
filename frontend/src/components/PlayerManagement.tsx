@@ -15,8 +15,7 @@ import {
   PlayingStatus,
 } from '../services/playerManagementService';
 import { teamManagementService, ManagedTeam } from '../services/teamManagementService';
-import { LoadingSpinner } from './LoadingSpinner';
-import { Toast } from './Toast';
+import LoadingSpinner from './LoadingSpinner';
 import './PlayerManagement.css';
 
 const BATTING_STYLE_OPTIONS: { value: BattingStyle; label: string }[] = [
@@ -388,7 +387,9 @@ export const PlayerManagement: React.FC = () => {
       )}
 
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        <div className={`inline-toast inline-toast-${toast.type}`} onClick={() => setToast(null)}>
+          {toast.message}
+        </div>
       )}
     </div>
   );

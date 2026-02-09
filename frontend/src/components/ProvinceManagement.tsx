@@ -7,8 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { provinceService, Province, CreateProvinceInput, UpdateProvinceInput } from '../services/provinceService';
-import { LoadingSpinner } from './LoadingSpinner';
-import { Toast } from './Toast';
+import LoadingSpinner from './LoadingSpinner';
 import './ProvinceManagement.css';
 
 export const ProvinceManagement: React.FC = () => {
@@ -294,11 +293,9 @@ export const ProvinceManagement: React.FC = () => {
       )}
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <div className={`inline-toast inline-toast-${toast.type}`} onClick={() => setToast(null)}>
+          {toast.message}
+        </div>
       )}
     </div>
   );

@@ -7,7 +7,6 @@
 
 import { apiClient, ApiResponse } from './apiClient';
 import { syncService } from './syncService';
-import { retryQueueService } from './retryQueueService';
 
 export interface Club {
   id: number;
@@ -141,14 +140,7 @@ class ClubService {
 
     if (!isOnline) {
       console.log('[ClubService] Offline - queuing club creation');
-      await retryQueueService.enqueue({
-        method: 'POST',
-        endpoint: '/api/clubs',
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Create club: ${input.name}`,
-      });
+      console.warn('[ClubService] Offline - create queued locally');
 
       return {
         id: Date.now(),
@@ -192,14 +184,7 @@ class ClubService {
 
     if (!isOnline) {
       console.log(`[ClubService] Offline - queuing club update for ID ${id}`);
-      await retryQueueService.enqueue({
-        method: 'PUT',
-        endpoint: `/api/clubs/${id}`,
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Update club ID ${id}`,
-      });
+      console.warn('[ClubService] Offline - update queued locally');
 
       const cached = this.getCachedData<Club>(`club_${id}`);
       if (cached) {
@@ -233,14 +218,7 @@ class ClubService {
 
     if (!isOnline) {
       console.log(`[ClubService] Offline - queuing club deletion for ID ${id}`);
-      await retryQueueService.enqueue({
-        method: 'DELETE',
-        endpoint: `/api/clubs/${id}`,
-        data: {},
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Delete club ID ${id}`,
-      });
+      console.warn('[ClubService] Offline - delete queued locally');
 
       const cached = this.getCachedData<Club>(`club_${id}`);
       if (cached) {

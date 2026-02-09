@@ -688,3 +688,32 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Inline Toast Notifications */
+.inline-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  z-index: 9999;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideInToast 0.3s ease-out;
+  max-width: 400px;
+}
+
+.inline-toast-success {
+  background: #27ae60;
+}
+
+.inline-toast-error {
+  background: #e74c3c;
+}
+
+@keyframes slideInToast {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}

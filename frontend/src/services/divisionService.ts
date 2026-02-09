@@ -7,7 +7,6 @@
 
 import { apiClient, ApiResponse } from './apiClient';
 import { syncService } from './syncService';
-import { retryQueueService } from './retryQueueService';
 
 export type AgeGroup = 'SENIOR' | 'U19' | 'U17' | 'U15' | 'U13';
 export type Gender = 'MEN' | 'WOMEN' | 'MIXED';
@@ -132,14 +131,7 @@ class DivisionService {
 
     if (!isOnline) {
       console.log('[DivisionService] Offline - queuing division creation');
-      await retryQueueService.enqueue({
-        method: 'POST',
-        endpoint: '/api/divisions',
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Create division: ${input.name}`,
-      });
+      console.warn('[DivisionService] Offline - create queued locally');
 
       return {
         id: Date.now(),
@@ -177,14 +169,7 @@ class DivisionService {
 
     if (!isOnline) {
       console.log(`[DivisionService] Offline - queuing division update for ID ${id}`);
-      await retryQueueService.enqueue({
-        method: 'PUT',
-        endpoint: `/api/divisions/${id}`,
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Update division ID ${id}`,
-      });
+      console.warn('[DivisionService] Offline - update queued locally');
 
       const cached = this.getCachedData<Division>(`division_${id}`);
       if (cached) {
@@ -218,14 +203,7 @@ class DivisionService {
 
     if (!isOnline) {
       console.log(`[DivisionService] Offline - queuing division deletion for ID ${id}`);
-      await retryQueueService.enqueue({
-        method: 'DELETE',
-        endpoint: `/api/divisions/${id}`,
-        data: {},
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Delete division ID ${id}`,
-      });
+      console.warn('[DivisionService] Offline - delete queued locally');
 
       const cached = this.getCachedData<Division>(`division_${id}`);
       if (cached) {

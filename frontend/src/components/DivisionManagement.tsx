@@ -8,8 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { divisionService, Division, CreateDivisionInput, UpdateDivisionInput, AgeGroup, Gender } from '../services/divisionService';
 import { provinceService, Province } from '../services/provinceService';
-import { LoadingSpinner } from './LoadingSpinner';
-import { Toast } from './Toast';
+import LoadingSpinner from './LoadingSpinner';
 import './DivisionManagement.css';
 
 const AGE_GROUP_OPTIONS: { value: AgeGroup; label: string }[] = [
@@ -364,11 +363,9 @@ export const DivisionManagement: React.FC = () => {
       )}
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <div className={`inline-toast inline-toast-${toast.type}`} onClick={() => setToast(null)}>
+          {toast.message}
+        </div>
       )}
     </div>
   );

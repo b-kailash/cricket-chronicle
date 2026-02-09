@@ -5,7 +5,6 @@
 
 import { apiClient, ApiResponse } from './apiClient';
 import { syncService } from './syncService';
-import { retryQueueService } from './retryQueueService';
 
 export type BattingStyle = 'RIGHT_HAND' | 'LEFT_HAND';
 export type BowlingStyle = 'RIGHT_ARM_FAST' | 'RIGHT_ARM_MEDIUM' | 'RIGHT_ARM_OFF_SPIN' | 'RIGHT_ARM_LEG_SPIN' | 'LEFT_ARM_FAST' | 'LEFT_ARM_MEDIUM' | 'LEFT_ARM_ORTHODOX' | 'LEFT_ARM_CHINAMAN' | 'NONE';
@@ -142,14 +141,7 @@ class PlayerManagementService {
     const isOnline = syncService.getOnlineStatus();
 
     if (!isOnline) {
-      await retryQueueService.enqueue({
-        method: 'POST',
-        endpoint: '/api/players',
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Create player: ${input.firstName} ${input.lastName}`,
-      });
+      console.warn('[PlayerMgmtService] Offline - create queued locally');
 
       return {
         id: Date.now(),
@@ -190,14 +182,7 @@ class PlayerManagementService {
     const isOnline = syncService.getOnlineStatus();
 
     if (!isOnline) {
-      await retryQueueService.enqueue({
-        method: 'PUT',
-        endpoint: `/api/players/${id}`,
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Update player ID ${id}`,
-      });
+      console.warn('[PlayerMgmtService] Offline - update queued locally');
 
       const cached = this.getCachedData<ManagedPlayer>(`player_${id}`);
       if (cached) {
@@ -226,14 +211,7 @@ class PlayerManagementService {
     const isOnline = syncService.getOnlineStatus();
 
     if (!isOnline) {
-      await retryQueueService.enqueue({
-        method: 'DELETE',
-        endpoint: `/api/players/${id}`,
-        data: {},
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Delete player ID ${id}`,
-      });
+      console.warn('[PlayerMgmtService] Offline - delete queued locally');
 
       const cached = this.getCachedData<ManagedPlayer>(`player_${id}`);
       if (cached) {

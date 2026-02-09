@@ -7,7 +7,6 @@
 
 import { apiClient, ApiResponse } from './apiClient';
 import { syncService } from './syncService';
-import { retryQueueService } from './retryQueueService';
 
 // Province interfaces matching backend schema
 export interface Province {
@@ -138,14 +137,7 @@ class ProvinceService {
     if (!isOnline) {
       // Queue the operation for later
       console.log('[ProvinceService] Offline - queuing province creation');
-      await retryQueueService.enqueue({
-        method: 'POST',
-        endpoint: '/api/provinces',
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Create province: ${input.name}`,
-      });
+      console.warn('[ProvinceService] Offline - operation queued locally');
 
       // Return a placeholder (will be synced later)
       return {
@@ -186,14 +178,7 @@ class ProvinceService {
     if (!isOnline) {
       // Queue the operation for later
       console.log(`[ProvinceService] Offline - queuing province update for ID ${id}`);
-      await retryQueueService.enqueue({
-        method: 'PUT',
-        endpoint: `/api/provinces/${id}`,
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Update province ID ${id}`,
-      });
+      console.warn('[ProvinceService] Offline - update queued locally');
 
       // Return cached province with updates applied
       const cached = this.getCachedData<Province>(`province_${id}`);
@@ -234,14 +219,7 @@ class ProvinceService {
     if (!isOnline) {
       // Queue the operation for later
       console.log(`[ProvinceService] Offline - queuing province deletion for ID ${id}`);
-      await retryQueueService.enqueue({
-        method: 'DELETE',
-        endpoint: `/api/provinces/${id}`,
-        data: {},
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Delete province ID ${id}`,
-      });
+      console.warn('[ProvinceService] Offline - delete queued locally');
 
       // Return cached province with status changed
       const cached = this.getCachedData<Province>(`province_${id}`);

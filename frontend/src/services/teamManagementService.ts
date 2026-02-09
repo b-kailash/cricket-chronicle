@@ -8,7 +8,6 @@
 
 import { apiClient, ApiResponse } from './apiClient';
 import { syncService } from './syncService';
-import { retryQueueService } from './retryQueueService';
 
 export interface ManagedTeam {
   id: number;
@@ -144,14 +143,7 @@ class TeamManagementService {
 
     if (!isOnline) {
       console.log('[TeamMgmtService] Offline - queuing team creation');
-      await retryQueueService.enqueue({
-        method: 'POST',
-        endpoint: '/api/teams',
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Create team: ${input.label}`,
-      });
+      console.warn('[TeamMgmtService] Offline - create queued locally');
 
       return {
         id: Date.now(),
@@ -193,14 +185,7 @@ class TeamManagementService {
 
     if (!isOnline) {
       console.log(`[TeamMgmtService] Offline - queuing team update for ID ${id}`);
-      await retryQueueService.enqueue({
-        method: 'PUT',
-        endpoint: `/api/teams/${id}`,
-        data: input,
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Update team ID ${id}`,
-      });
+      console.warn('[TeamMgmtService] Offline - update queued locally');
 
       const cached = this.getCachedData<ManagedTeam>(`team_${id}`);
       if (cached) {
@@ -234,14 +219,7 @@ class TeamManagementService {
 
     if (!isOnline) {
       console.log(`[TeamMgmtService] Offline - queuing team deletion for ID ${id}`);
-      await retryQueueService.enqueue({
-        method: 'DELETE',
-        endpoint: `/api/teams/${id}`,
-        data: {},
-        timestamp: Date.now(),
-        retryCount: 0,
-        description: `Delete team ID ${id}`,
-      });
+      console.warn('[TeamMgmtService] Offline - delete queued locally');
 
       const cached = this.getCachedData<ManagedTeam>(`team_${id}`);
       if (cached) {

@@ -7,8 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { teamManagementService, ManagedTeam, CreateTeamInput, UpdateTeamInput } from '../services/teamManagementService';
 import { clubService, Club } from '../services/clubService';
 import { divisionService, Division } from '../services/divisionService';
-import { LoadingSpinner } from './LoadingSpinner';
-import { Toast } from './Toast';
+import LoadingSpinner from './LoadingSpinner';
 import './TeamManagement.css';
 
 export const TeamManagement: React.FC = () => {
@@ -318,11 +317,9 @@ export const TeamManagement: React.FC = () => {
       )}
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <div className={`inline-toast inline-toast-${toast.type}`} onClick={() => setToast(null)}>
+          {toast.message}
+        </div>
       )}
     </div>
   );
