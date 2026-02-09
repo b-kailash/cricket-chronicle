@@ -1,9 +1,31 @@
 import { PrismaClient, BattingStyle, BowlingStyle, PlayerRole, MatchFormat } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Starting seed...');
+
+  // Create admin user
+  const adminPassword = await bcrypt.hash('Admin123!', 12);
+  try {
+    const adminUser = await prisma.user.create({
+      data: {
+        email: 'admin@cricket.com',
+        passwordHash: adminPassword,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'PROVINCIAL_ADMIN',
+      },
+    });
+    console.log(`Created admin user: ${adminUser.email}`);
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      console.log('Admin user already exists');
+    } else {
+      throw error;
+    }
+  }
 
   // Create Province
   const province = await prisma.province.create({
@@ -120,8 +142,12 @@ async function main() {
   const team1Players = [];
   for (let i = 0; i < 11; i++) {
     const playerData = playerNames[i];
-    const player = await prisma.player.create({
-      data: {
+    const registrationId = `CTCC-${2026}-${String(i + 1).padStart(3, '0')}`;
+
+    const player = await prisma.player.upsert({
+      where: { registrationId },
+      update: {},
+      create: {
         firstName: playerData.firstName,
         lastName: playerData.lastName,
         dateOfBirth: new Date(1990 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
@@ -131,7 +157,7 @@ async function main() {
         bowlingStyle: playerData.bowlingStyle,
         primaryRole: playerData.role,
         teamId: team1.id,
-        registrationId: `CTCC-${2026}-${String(i + 1).padStart(3, '0')}`,
+        registrationId,
       },
     });
     team1Players.push(player);
@@ -142,8 +168,12 @@ async function main() {
   const team2Players = [];
   for (let i = 0; i < 11; i++) {
     const playerData = playerNames[i + 11];
-    const player = await prisma.player.create({
-      data: {
+    const registrationId = `SCC-${2026}-${String(i + 1).padStart(3, '0')}`;
+
+    const player = await prisma.player.upsert({
+      where: { registrationId },
+      update: {},
+      create: {
         firstName: playerData.firstName,
         lastName: playerData.lastName,
         dateOfBirth: new Date(1990 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
@@ -153,7 +183,7 @@ async function main() {
         bowlingStyle: playerData.bowlingStyle,
         primaryRole: playerData.role,
         teamId: team2.id,
-        registrationId: `SCC-${2026}-${String(i + 1).padStart(3, '0')}`,
+        registrationId,
       },
     });
     team2Players.push(player);

@@ -20,6 +20,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/Toast';
 import NetworkStatus from './components/NetworkStatus';
 import ProvinceManagement from './components/ProvinceManagement';
+import ClubManagement from './components/ClubManagement';
+import DivisionManagement from './components/DivisionManagement';
+import TeamManagement from './components/TeamManagement';
+import PlayerManagement from './components/PlayerManagement';
 import './App.css';
 
 /**
@@ -27,7 +31,7 @@ import './App.css';
  */
 function AppContent() {
   const { user, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<'list' | 'setup' | 'scoring' | 'test' | 'provinces'>(() => {
+  const [currentView, setCurrentView] = useState<'list' | 'setup' | 'scoring' | 'test' | 'provinces' | 'clubs' | 'divisions' | 'teams' | 'players'>(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('test')) {
       return 'test';
     }
@@ -131,6 +135,30 @@ function AppContent() {
             >
               Provinces
             </button>
+            <button
+              className={`nav-btn ${currentView === 'clubs' ? 'active' : ''}`}
+              onClick={() => setCurrentView('clubs')}
+            >
+              Clubs
+            </button>
+            <button
+              className={`nav-btn ${currentView === 'divisions' ? 'active' : ''}`}
+              onClick={() => setCurrentView('divisions')}
+            >
+              Divisions
+            </button>
+            <button
+              className={`nav-btn ${currentView === 'teams' ? 'active' : ''}`}
+              onClick={() => setCurrentView('teams')}
+            >
+              Teams
+            </button>
+            <button
+              className={`nav-btn ${currentView === 'players' ? 'active' : ''}`}
+              onClick={() => setCurrentView('players')}
+            >
+              Players
+            </button>
           </nav>
         </div>
         <div className="header-controls">
@@ -209,6 +237,22 @@ function AppContent() {
 
         {currentView === 'provinces' && (
           <ProvinceManagement />
+        )}
+
+        {currentView === 'clubs' && (
+          <ClubManagement />
+        )}
+
+        {currentView === 'divisions' && (
+          <DivisionManagement />
+        )}
+
+        {currentView === 'teams' && (
+          <TeamManagement />
+        )}
+
+        {currentView === 'players' && (
+          <PlayerManagement />
         )}
       </main>
 

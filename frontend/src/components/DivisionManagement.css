@@ -1,0 +1,85 @@
+/* Division Management Styles - follows Province/Club Management patterns */
+
+.division-management {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Table */
+.division-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.division-table thead {
+  background: #34495e;
+  color: #fff;
+}
+
+.division-table th,
+.division-table td {
+  padding: 12px 15px;
+  text-align: left;
+}
+
+.division-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.division-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.division-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.division-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Division Form */
+.division-form {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.division-form h2 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  color: #2c3e50;
+}
+
+/* Division Detail */
+.division-detail {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .division-table {
+    font-size: 12px;
+  }
+
+  .division-table th,
+  .division-table td {
+    padding: 8px 10px;
+  }
+}

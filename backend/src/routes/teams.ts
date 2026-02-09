@@ -6,15 +6,190 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { prisma } from '../config/database';
-import { optionalAuth } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
 import { ApiError } from '../middleware/errorHandler';
+import { teamManagementService } from '../services/teamService';
+import { Status } from '@prisma/client';
 
 const router = Router();
 
+// ============================================
+// Validation schemas for Team Management (Sprint 3 - PBI-204)
+// ============================================
+
+const createTeamSchema = z.object({
+  label: z.string().min(1, 'Team label is required').max(50),
+  clubId: z.number().int().positive('Club ID is required'),
+  divisionId: z.number().int().positive('Division ID is required'),
+  pocName: z.string().max(100).optional(),
+  pocEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
+  pocPhone: z.string().max(20).optional(),
+  captainId: z.number().int().positive().nullable().optional(),
+  viceCaptainId: z.number().int().positive().nullable().optional(),
+  maxSquadSize: z.number().int().min(11).max(30).optional(),
+  status: z.nativeEnum(Status).optional(),
+});
+
+const updateTeamSchema = z.object({
+  label: z.string().min(1).max(50).optional(),
+  divisionId: z.number().int().positive().optional(),
+  pocName: z.string().max(100).optional(),
+  pocEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
+  pocPhone: z.string().max(20).optional(),
+  captainId: z.number().int().positive().nullable().optional(),
+  viceCaptainId: z.number().int().positive().nullable().optional(),
+  maxSquadSize: z.number().int().min(11).max(30).optional(),
+  status: z.nativeEnum(Status).optional(),
+});
+
+// ============================================
+// Team Management CRUD (Sprint 3 - PBI-204)
+// ============================================
+
+/**
+ * POST /api/teams
+ * Create a new team
+ */
+router.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = createTeamSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw ApiError.badRequest('Validation failed', 'VALIDATION_ERROR', {
+        errors: validationResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      });
+    }
+
+    const team = await teamManagementService.createTeam(validationResult.data);
+
+    res.status(201).json({
+      success: true,
+      data: team,
+      message: 'Team created successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/teams/manage
+ * List teams for management with pagination (Sprint 3)
+ */
+router.get('/manage', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { clubId, divisionId, search, status, limit, offset } = req.query;
+
+    const result = await teamManagementService.listTeams({
+      clubId: clubId ? parseInt(clubId as string, 10) : undefined,
+      divisionId: divisionId ? parseInt(divisionId as string, 10) : undefined,
+      search: search as string | undefined,
+      status: status as Status | undefined,
+      limit: limit ? parseInt(limit as string, 10) : 20,
+      offset: offset ? parseInt(offset as string, 10) : 0,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/teams/manage/:id
+ * Get team details for management (Sprint 3)
+ */
+router.get('/manage/:id', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+
+    if (isNaN(id)) {
+      throw ApiError.badRequest('Invalid team ID');
+    }
+
+    const team = await teamManagementService.getTeamById(id);
+
+    res.status(200).json({
+      success: true,
+      data: team,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/teams/:id
+ * Update team
+ */
+router.put('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+
+    if (isNaN(id)) {
+      throw ApiError.badRequest('Invalid team ID');
+    }
+
+    const validationResult = updateTeamSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw ApiError.badRequest('Validation failed', 'VALIDATION_ERROR', {
+        errors: validationResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      });
+    }
+
+    const team = await teamManagementService.updateTeam(id, validationResult.data);
+
+    res.status(200).json({
+      success: true,
+      data: team,
+      message: 'Team updated successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/teams/:id
+ * Soft delete team
+ */
+router.delete('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+
+    if (isNaN(id)) {
+      throw ApiError.badRequest('Invalid team ID');
+    }
+
+    const team = await teamManagementService.deleteTeam(id);
+
+    res.status(200).json({
+      success: true,
+      data: team,
+      message: 'Team deactivated successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// Existing Sprint 2 endpoints (match setup)
+// ============================================
+
 /**
  * GET /api/teams
- * List all teams with club information
+ * List all teams with club information (Sprint 2 format for match setup)
  */
 router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
