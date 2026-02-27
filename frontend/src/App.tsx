@@ -1,6 +1,7 @@
 /**
  * Cricket Chronicle - Main Application
  * Sprint 2: Frontend-Backend Integration
+ * Sprint 3: Organisation Hierarchy Management
  */
 
 import { useState, useEffect } from 'react';
@@ -19,14 +20,31 @@ import AuthPage from './components/AuthPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/Toast';
 import NetworkStatus from './components/NetworkStatus';
+// Sprint 3: Organisation hierarchy pages
+import ProvincesPage from './pages/ProvincesPage';
+import ClubsPage from './pages/ClubsPage';
+import DivisionsPage from './pages/DivisionsPage';
+import TeamsPage from './pages/TeamsPage';
+import PlayersPage from './pages/PlayersPage';
 import './App.css';
 
 /**
  * Main App Content (Protected)
  */
+type AppView =
+  | 'list'
+  | 'setup'
+  | 'scoring'
+  | 'test'
+  | 'provinces'
+  | 'clubs'
+  | 'divisions'
+  | 'teams'
+  | 'players';
+
 function AppContent() {
   const { user, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<'list' | 'setup' | 'scoring' | 'test'>(() => {
+  const [currentView, setCurrentView] = useState<AppView>(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('test')) {
       return 'test';
     }
@@ -139,14 +157,14 @@ function AppContent() {
               marginRight: '10px',
             }}
           >
-            🧪 Test
+            Test
           </button>
           <button
             className={`offline-toggle ${isOnline ? 'online' : 'offline'}`}
             onClick={toggleOfflineMode}
             title="Toggle offline mode (for testing)"
           >
-            {isOnline ? '🟢 Online' : '🔴 Offline'}
+            {isOnline ? 'Online' : 'Offline'}
           </button>
           <SyncStatus />
           <button
@@ -168,28 +186,82 @@ function AppContent() {
         </div>
       </header>
 
-      <main className="app-main">
-        {currentView === 'list' && (
-          <MatchList
-            onMatchSelected={handleMatchSelected}
-            onNewMatch={handleNewMatch}
-          />
-        )}
+      {/* Navigation sidebar */}
+      <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)' }}>
+        <nav className="app-sidebar">
+          <div className="nav-section">
+            <div className="nav-section-title">Scoring</div>
+            <button
+              className={`nav-link ${currentView === 'list' ? 'active' : ''}`}
+              onClick={handleBackToList}
+            >
+              Matches
+            </button>
+          </div>
+          <div className="nav-section">
+            <div className="nav-section-title">Organisation</div>
+            <button
+              className={`nav-link ${currentView === 'provinces' ? 'active' : ''}`}
+              onClick={() => setCurrentView('provinces')}
+            >
+              Provinces
+            </button>
+            <button
+              className={`nav-link ${currentView === 'clubs' ? 'active' : ''}`}
+              onClick={() => setCurrentView('clubs')}
+            >
+              Clubs
+            </button>
+            <button
+              className={`nav-link ${currentView === 'divisions' ? 'active' : ''}`}
+              onClick={() => setCurrentView('divisions')}
+            >
+              Divisions
+            </button>
+            <button
+              className={`nav-link ${currentView === 'teams' ? 'active' : ''}`}
+              onClick={() => setCurrentView('teams')}
+            >
+              Teams
+            </button>
+            <button
+              className={`nav-link ${currentView === 'players' ? 'active' : ''}`}
+              onClick={() => setCurrentView('players')}
+            >
+              Players
+            </button>
+          </div>
+        </nav>
 
-        {currentView === 'setup' && (
-          <MatchSetup
-            onMatchCreated={handleMatchCreated}
-            onCancel={handleBackToList}
-          />
-        )}
+        <main className="app-main" style={{ flex: 1 }}>
+          {currentView === 'list' && (
+            <MatchList
+              onMatchSelected={handleMatchSelected}
+              onNewMatch={handleNewMatch}
+            />
+          )}
 
-        {currentView === 'scoring' && currentMatch && (
-          <ScoringInterface
-            match={currentMatch}
-            onBack={handleBackToList}
-          />
-        )}
-      </main>
+          {currentView === 'setup' && (
+            <MatchSetup
+              onMatchCreated={handleMatchCreated}
+              onCancel={handleBackToList}
+            />
+          )}
+
+          {currentView === 'scoring' && currentMatch && (
+            <ScoringInterface
+              match={currentMatch}
+              onBack={handleBackToList}
+            />
+          )}
+
+          {currentView === 'provinces' && <ProvincesPage />}
+          {currentView === 'clubs' && <ClubsPage />}
+          {currentView === 'divisions' && <DivisionsPage />}
+          {currentView === 'teams' && <TeamsPage />}
+          {currentView === 'players' && <PlayersPage />}
+        </main>
+      </div>
 
       <footer className="app-footer">
         <p>Cricket Chronicle - Ball-by-Ball Scoring</p>
@@ -222,6 +294,52 @@ function AppContent() {
 
         .logout-btn:hover {
           background: #c0392b !important;
+        }
+
+        .app-sidebar {
+          width: 180px;
+          min-width: 180px;
+          background: #2c3e50;
+          padding: 16px 0;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .nav-section {
+          margin-bottom: 8px;
+        }
+
+        .nav-section-title {
+          color: #7f8c8d;
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          padding: 8px 16px 4px;
+        }
+
+        .nav-link {
+          display: block;
+          width: 100%;
+          text-align: left;
+          padding: 9px 16px;
+          background: transparent;
+          border: none;
+          color: #bdc3c7;
+          cursor: pointer;
+          font-size: 0.875rem;
+          transition: background 0.15s, color 0.15s;
+        }
+
+        .nav-link:hover {
+          background: #34495e;
+          color: #ecf0f1;
+        }
+
+        .nav-link.active {
+          background: #2980b9;
+          color: white;
+          font-weight: 600;
         }
       `}</style>
     </div>

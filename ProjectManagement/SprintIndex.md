@@ -21,7 +21,7 @@ This document tracks all sprints in the Cricket Chronicle project, providing qui
 | Sprint 0 | Technical Spike - Offline Sync PoC | Completed | 2026-02-01 | 13 | [Sprint-00/](Sprints/Sprint-00/) |
 | Sprint 1 | Backend Infrastructure & Containerized Database | Completed | 2026-02-02 | 29 | [Sprint-01/](Sprints/Sprint-01/) |
 | Sprint 2 | Frontend-Backend Integration & Real Sync | Completed | 2026-02-02 to 2026-02-06 | 30 | [Sprint-02/](Sprints/Sprint-02/) |
-| Sprint 3 | Player & Officials Registration | Not Started | TBD | TBD | - |
+| Sprint 3 | Organization Hierarchy Management | In Progress | 2026-02-26 | 34 | [Sprint-03/](Sprints/Sprint-03/) |
 | Sprint 4 | Match Creation & Setup | Not Started | TBD | TBD | - |
 | Sprint 5 | Ball-by-Ball Scoring Engine (Basic) | Not Started | TBD | TBD | - |
 | Sprint 6 | Wicket Recording & Innings Management | Not Started | TBD | TBD | - |
@@ -70,7 +70,7 @@ Each Sprint directory contains:
 ### Overall Progress
 - **Total Sprints Planned:** 8 (MVP)
 - **Sprints Completed:** 3 (Sprint 0, Sprint 1, Sprint 2)
-- **Current Sprint:** Sprint 3 (Not Started)
+- **Current Sprint:** Sprint 3 (In Progress)
 - **Overall Completion:** 38% (3/8 sprints)
 
 ### Velocity Tracking

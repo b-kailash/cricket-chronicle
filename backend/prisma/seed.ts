@@ -186,6 +186,36 @@ async function main() {
   console.log('\nSeed completed successfully!');
 }
 
+/**
+ * Reset all organisation hierarchy data for test isolation.
+ * Deletes players, teams, divisions, clubs, and provinces (in dependency order).
+ * Competitions and matches referencing these entities are also removed.
+ *
+ * Retrospective action A3: Sprint 2 carry-in.
+ *
+ * Usage: import and call before seeding in integration tests:
+ *   import { resetOrganisationData } from './seed';
+ *   await resetOrganisationData();
+ */
+export async function resetOrganisationData(): Promise<void> {
+  console.log('[seed] Resetting organisation data...');
+
+  // Delete in reverse dependency order to satisfy FK constraints
+  await prisma.delivery.deleteMany({});
+  await prisma.battingScorecard.deleteMany({});
+  await prisma.bowlingScorecard.deleteMany({});
+  await prisma.innings.deleteMany({});
+  await prisma.match.deleteMany({});
+  await prisma.competition.deleteMany({});
+  await prisma.player.deleteMany({});
+  await prisma.team.deleteMany({});
+  await prisma.division.deleteMany({});
+  await prisma.club.deleteMany({});
+  await prisma.province.deleteMany({});
+
+  console.log('[seed] Organisation data reset complete.');
+}
+
 main()
   .catch((e) => {
     console.error('Seed error:', e);
